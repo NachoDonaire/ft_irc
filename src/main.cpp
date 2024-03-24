@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <iostream>
 
 #define BUF_SIZE 500
 
@@ -26,8 +27,8 @@ int main(int argc, char *argv[])
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
 	int sfd, s;
-	struct sockaddr_storage peer_addr;
-	socklen_t peer_addr_len;
+	//struct sockaddr_storage peer_addr;
+	//socklen_t peer_addr_len;
 	ssize_t nread;
 	char buf[BUF_SIZE];
 
@@ -38,7 +39,7 @@ int main(int argc, char *argv[])
 
 	memset(&hints, 0, sizeof(hints));
 	//af_inet es para ipv4
-	hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+	hints.ai_family = AF_INET;    /* Allow IPv4 or IPv6 */
 	//sockstream indica el protocolo tcp
 	hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
 	hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
@@ -78,31 +79,24 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Could not bind\n");
 		exit(EXIT_FAILURE);
 	}
-
-	/* Read datagrams and echo them back to sender */
-
+	listen(sfd, 1);
 	for (;;) {
-		peer_addr_len = sizeof(peer_addr);
-		nread = recvfrom(sfd, buf, BUF_SIZE, 0,
-				(struct sockaddr *) &peer_addr, &peer_addr_len);
+		int clientsfd = accept(sfd, NULL, NULL);
+		if (clientsfd == -1)
+		{
+			std::cout << "Erro accepting server socket" << std::endl;
+			continue ;
+		}
+		nread = recv(clientsfd, buf, BUF_SIZE, 0);
 		if (nread == -1)
+		{
 			continue;               /* Ignore failed request */
-
-		char host[NI_MAXHOST], service[NI_MAXSERV];
-
-		s = getnameinfo((struct sockaddr *) &peer_addr,
-				peer_addr_len, host, NI_MAXHOST,
-				service, NI_MAXSERV, NI_NUMERICSERV);
-		if (s == 0)
-			printf("Received %zd bytes from %s:%s\n",
-					nread, host, service);
-		else
-			fprintf(stderr, "getnameinfo: %s\n", gai_strerror(s));
-
-		if (sendto(sfd, buf, nread, 0,
-					(struct sockaddr *) &peer_addr,
-					peer_addr_len) != nread)
+		}
+		std::cout << "RECEIVED DATA" << std::endl;
+		std::cout << buf << std::endl;
+		if (send(clientsfd, buf, nread, 0) != nread)
 			fprintf(stderr, "Error sending response\n");
+		close(clientsfd);
 	}
 }
 
