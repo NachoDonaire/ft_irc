@@ -29,10 +29,10 @@ int main (void)
 		return 0;
 	}
 
-	if (fds[0].revents & POLLIN)
+	if (fds[0].revents == POLLIN)
 		printf ("stdin is readable\n");
 
-	if (fds[1].revents & POLLOUT)
+	if (fds[1].revents == POLLOUT)
 		printf ("stdout is writable\n");
 
 	return 0;

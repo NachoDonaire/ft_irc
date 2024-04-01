@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -6,98 +7,99 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <iostream>
+#include <poll.h>
+#include <stdlib.h>
 
-#define BUF_SIZE 500
+#define CLIENTS 10
 
-void	printAddrInfo(struct addrinfo *r)
+void	initializeClients(struct pollfd *csock, int ssock)
 {
-	struct addrinfo *ptr;
-	for (ptr = r; ptr != NULL ; ptr = ptr->ai_next)
+	for (int i = 0; i < CLIENTS; i++)
 	{
-		printf("ai_flags: %d\n", ptr->ai_flags);
-		printf("ai_family: %d\n", ptr->ai_family);
-		printf("ai_socktype: %d\n", ptr->ai_socktype);
-		printf("ai_socktype: %d\n", ptr->ai_protocol);
-		printf("ai_canonname: %s\n", ptr->ai_canonname);
+		if (i == 0)
+			csock[i].fd = ssock;
+		csock[i].events = POLLIN;
 	}
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
+	if (argc != 2)
+	{
+		std::cout << "Choose port" << std::endl;
+		return 0;
+	}
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
-	int sfd, s;
-	//struct sockaddr_storage peer_addr;
-	//socklen_t peer_addr_len;
-	ssize_t nread;
-	char buf[BUF_SIZE];
+	int	sskt, nread;
+	struct pollfd *csock;
+	char	buf[500];
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s port\n", argv[0]);
-		exit(EXIT_FAILURE);
-	}
-
-	memset(&hints, 0, sizeof(hints));
-	//af_inet es para ipv4
-	hints.ai_family = AF_INET;    /* Allow IPv4 or IPv6 */
-	//sockstream indica el protocolo tcp
-	hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
-	hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
+	csock = (struct pollfd *)malloc(sizeof(struct pollfd) * (CLIENTS + 1));
+	hints.ai_family = AF_INET; //ipv4
+	hints.ai_socktype = SOCK_STREAM; /* tcp */
+	hints.ai_flags = AI_PASSIVE;
 	hints.ai_protocol = 0;          /* Any protocol */
-	hints.ai_canonname = NULL;
-	hints.ai_addr = NULL;
-	hints.ai_next = NULL;
-
-	s = getaddrinfo(NULL, argv[1], &hints, &result);
-	if (s != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
-		exit(EXIT_FAILURE);
-	}
-
-	//printAddrInfo(result);
-	//return (0);
-	/* getaddrinfo() returns a list of address structures.
-	   Try each address until we successfully bind(2).
-	   If socket(2) (or bind(2)) fails, we (close the socket
-	   and) try the next address. */
-
-	for (rp = result; rp != NULL; rp = rp->ai_next) {
-		sfd = socket(rp->ai_family, rp->ai_socktype,
-				rp->ai_protocol);
-		if (sfd == -1)
+        hints.ai_canonname = NULL;
+        hints.ai_addr = NULL;
+        hints.ai_next = NULL;
+	
+	if (getaddrinfo(NULL, argv[1], &hints, &result) != 0)
+		std::cout << "getaddrinfo error" << std::endl;
+	for (rp = result; rp != NULL; rp = rp->ai_next)
+	{
+		sskt = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+		if (sskt == -1)
 			continue;
-
-		if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
-			break;                  /* Success */
-
-		close(sfd);
+		if (bind(sskt, rp->ai_addr, rp->ai_addrlen) == 0)
+			break ;
 	}
-
-	freeaddrinfo(result);           /* No longer needed */
-
-	if (rp == NULL) {               /* No address succeeded */
-		fprintf(stderr, "Could not bind\n");
-		exit(EXIT_FAILURE);
+	freeaddrinfo(result);
+	if (rp == NULL)
+	{
+		std::cout << "cannot bind" << std::endl;
 	}
-	listen(sfd, 1);
-	for (;;) {
-		int clientsfd = accept(sfd, NULL, NULL);
-		if (clientsfd == -1)
+	//initializeClients(csock, sskt);
+	csock[0].fd = sskt;
+	csock[0].events = POLLIN;
+	listen(sskt, CLIENTS);
+	int	i = 1;
+	while (1)
+	{
+		if (poll(csock, CLIENTS + 1, 50000) < 0)
 		{
-			std::cout << "Erro accepting server socket" << std::endl;
-			continue ;
+			std::cout << "poll error" << std::endl;
+			return 0;
 		}
-		nread = recv(clientsfd, buf, BUF_SIZE, 0);
-		if (nread == -1)
+		if (csock[0].revents & POLLIN)
 		{
-			continue;               /* Ignore failed request */
+			csock[i].fd = accept(sskt, rp->ai_addr, &rp->ai_addrlen);
+			csock[i].events = POLLIN;
+			i++;
 		}
-		std::cout << "RECEIVED DATA" << std::endl;
-		std::cout << buf << std::endl;
-		if (send(clientsfd, buf, nread, 0) != nread)
-			fprintf(stderr, "Error sending response\n");
-		close(clientsfd);
+		for (int y = 1; y < CLIENTS; y++)
+		{
+			if (csock[y].revents & POLLIN)
+			{
+				nread = recv(csock[y].fd, buf, 500, 0);
+				if (nread == -1)
+					continue ;
+				std::cout << "Received data" << std::endl;
+				std::cout << buf << std::endl;
+				char bb[2];
+				sprintf(bb, "%d", i);
+				std::string toSend(bb);
+				toSend += " , we got this";
+				if (send(csock[y].fd, toSend.c_str(), 15, 0) != 15)
+					std::cout << "error sending" << std::endl;
+			}
+		}
+		//close (csock);
 	}
+	free(csock);
 }
+
+
+
 
 
