@@ -1,4 +1,5 @@
-SRCS = main.cpp
+SRCS = main.cpp	\
+       Server.cpp
 SRDIR = src/
 NAME = ircserv
 DSRC = $(addprefix $(SRDIR), $(SRCS))
