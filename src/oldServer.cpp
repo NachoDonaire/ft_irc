@@ -4,52 +4,16 @@ Server::Server()
 {
 }
 
-int	Server::reallocPollFd(int index)
-{
-	if (index < 0)
-	{
-		struct pollfd	*neopfd;
-		int		i;
-
-		i = 0;
-		// +2 --> uno por el cliente nuevo y otro por el listener
-		neopfd = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline + 2));
-		while (i < nClientsOnline + 1) 
-		{
-			neopfd[i].fd = clientSock[i].fd;
-			neopfd[i].events = clientSock[i].events;
-			neopfd[i].revents = clientSock[i].revents;
-			i++;
-		}
-		free(clientSock);
-		clientSock = neopfd;
-		return (nClientsOnline + 1);
-	}
-	
-	struct pollfd	*neopfd;
-	int		i;
-
-	i = index;
-	// +2 --> uno por el cliente nuevo y otro por el listener
-	neopfd = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline));
-	while (i < nClientsOnline) 
-	{
-		neopfd[i].fd = clientSock[i + 1].fd;
-		neopfd[i].events = clientSock[i + 1].events;
-		neopfd[i].revents = clientSock[i + 1].revents;
-		i++;
-	}
-	free(clientSock);
-	clientSock = neopfd;
-	return (nClientsOnline - 1);
-}
-
 Server::Server(char *p, char *pd) : port(p)
 {
 	psswd = std::string(pd);
-	nClientsOnline = 0;
-	// 1 para el listener
-	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (1));
+	//superpivisional el malloc, aunque sospecho que no queda otra
+	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * 5);
+	//again, harcodeo del nclients
+	for (int i = 0; i < 5; i++)
+	{
+		clientSock[i].fd = -1;
+	}
 }	
 
 bool	Server::launchServer()
@@ -92,11 +56,11 @@ bool	Server::launchServer()
 
 bool	Server::handleConnections()
 {
-	bool		error = 0;
+	bool	error = 0;
 	while (error == 0)
 	{
 		//harcodeo de nclientes + server sockets y el timeout
-		if (poll(clientSock, nClientsOnline + 1, 50000) < 0)
+		if (poll(clientSock, 6, 50000) < 0)
 		{
 			std::cerr << "poll() error" << std::endl;
 			return 1;
@@ -104,12 +68,16 @@ bool	Server::handleConnections()
 		if (clientSock[0].revents & POLLIN)
 		{
 			std::cout << "Someones connecting" << std::endl;
-			nClientsOnline = reallocPollFd(-1);
-			std::cout << nClientsOnline << std::endl;
-			clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
-			clientSock[nClientsOnline].events = POLLIN;
+			int	pos = this->lookForAvailableSocket();
+			if (pos == -1)
+			{
+				std::cerr << "Not available client socket" << std::endl;
+			}
+			clientSock[pos].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
+			clientSock[pos].events = POLLIN;
 		}
-		for (int y = 1; y < nClientsOnline + 1; y++)
+		//harcodeo again de n clientes
+		for (int y = 1; y < 6; y++)
 		{
 			if (clientSock[y].revents & POLLIN && clientSock[y].fd != -1)
 			{
@@ -119,11 +87,7 @@ bool	Server::handleConnections()
 				std::cout << "In the name of the: " << y << std::endl;
 				send(clientSock[y].fd, "response", 8, 0);
 				std::cout << recData << std::endl;
-				if (std::string(recData) == "exit")
-				{
-					close(clientSock[y].fd);
-					reallocPollFd(y);
-				}
+				//close(clientSock[y].fd);
 			}
 		}
 			//close socket ??

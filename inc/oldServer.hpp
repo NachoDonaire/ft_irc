@@ -20,22 +20,18 @@ class Server
 	private:
 		char		*port;
 		std::string	psswd;
-		int		nClientsOnline;
 		//harcodeo del tamaño del mensaje recibido
 		char 		recData[500];
 		struct addrinfo	*rp;
 		struct pollfd	*clientSock;
 		int		serverSock;
  	public:
-    		Server(char *port, char *passwd);
     		Server();
-    		~Server();
 		bool		handleConnections();
 		bool		launchServer();
-		//deprecated
 		int		lookForAvailableSocket();
-		int		reallocPollFd(int index);
-
+    		Server(char *port, char *passwd);
+    		~Server();
 };
 
 #endif
