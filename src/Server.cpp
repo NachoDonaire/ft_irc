@@ -6,50 +6,38 @@ Server::Server()
 
 int	Server::reallocPollFd(int index)
 {
+	struct pollfd *neo;
+	int				i;
+	int				y;
+	int				nClients;
+	int				limit;
+
 	if (index < 0)
 	{
-		struct pollfd	*neopfd;
-		int		i;
-
-		i = 0;
-		// +2 --> uno por el cliente nuevo y otro por el listener
-		neopfd = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline + 2));
-		while (i < nClientsOnline + 1) 
-		{
-			neopfd[i].fd = clientSock[i].fd;
-			neopfd[i].events = clientSock[i].events;
-			neopfd[i].revents = clientSock[i].revents;
-			i++;
-		}
-		free(clientSock);
-		clientSock = neopfd;
-		return (nClientsOnline + 1);
+		neo = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline + 2));
+		limit = nClientsOnline + 1;
+		nClients = nClientsOnline + 1;
 	}
-	
-	struct pollfd	*neopfd;
-	int		i;
-	int		y;
-
+	else
+	{
+		neo = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline));
+		limit = nClientsOnline + 1;
+		nClients = nClientsOnline - 1;
+	}
 	i = 0;
 	y = 0;
-	// +2 --> uno por el cliente nuevo y otro por el listener
-	neopfd = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline));
-	while (i < nClientsOnline + 1) 
+	while (i < limit)
 	{
 		if (i == index)
 		{
 			i++;
 			continue ;
 		}
-		neopfd[y].fd = clientSock[i].fd;
-		neopfd[y].events = clientSock[i].events;
-		neopfd[y].revents = clientSock[i].revents;
-		i++;
-		y++;
+		neo[y].fd = clientSock[i].fd;
+		neo[y].events = clientSock[i].events;
+		neo[y++].revents = clientSock[i++].revents;
 	}
-	free(clientSock);
-	clientSock = neopfd;
-	return (nClientsOnline - 1);
+	return (nClients);
 }
 
 Server::Server(char *p, char *pd) : port(p)
@@ -112,26 +100,79 @@ void	Server::checkClientEvents()
 {
 	for (int y = 1; y < nClientsOnline + 1; y++)
 	{
-		if (clientSock[y].revents & POLLIN && clientSock[y].fd != -1)
+		if (clientSock[y].revents & POLLIN)
 		{
 			int nread = recv(clientSock[y].fd, this->recData, 512, 0);
 			this->recData[nread] = '\0';
 			std::cout << "I am: " << y << std::endl;
 			std::cout << recData << std::endl;
-			clients[y - 1].setMsg(std::string(recData));
+			std::cout << clients.size() << std::endl;
+			clients[0].setMsg(recData);
 		}
+	}
+	int	i = 0;
+	while (++i < nClientsOnline + 1)
+	{
+		if (clientSock[i].revents & POLLHUP)
+		{
+			std::cout << "JUGGLES" << std::endl;
+			nClientsOnline = reallocPollFd(i);
+			close(clientSock[i].fd);
+			std::cout << "JUGGLES" << std::endl;
+			std::cout << nClientsOnline << " and i am: " << i <<std::endl;
+			i--;
+		}
+	}
+
+}
+
+void	Server::handleError(int status, Client c)
+{
+	if (status == 1)
+	{
+		std::cerr << "Not valid command from " << c.getNick() << std::endl;
+	}
+	else if (status == 2)
+	{
+		//std::cerr << "Not valid psswd" << std::endl;
+		std::string msgerr("Not valid password");
+		send(c.getSocket(), msgerr.c_str(), msgerr.size(), 0);
+		close(c.getSocket());
+	}
+}
+
+void	Server::pass(Client c)
+{
+	std::string msg("PASS ");
+	msg += psswd;
+	msg += std::string("\r\n");
+	send(c.getSocket(), msg.c_str(), msg.size(), 0);
+}
+
+void	Server::launchAction(Client c)
+{
+	//if (c.getParams()[0] == "PASS")
+	{
+		pass(c);
 	}
 }
 
 void	Server::handleMessages()
 {
 	std::vector<Client>::iterator y;
+	int							parseStatus;
 
 	for (y = clients.begin(); y != clients.end(); y++)
 	{
 		if (y->getMsg() != "")
 		{
-			y->parseMsg();
+			parseStatus = y->parseMsg();
+			if (parseStatus != 0)
+			{
+				handleError(parseStatus, *y);
+				return ;
+			}
+			this->launchAction(*y);
 			y->setMsg("");
 		}
 	}

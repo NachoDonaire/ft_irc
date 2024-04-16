@@ -40,6 +40,9 @@ class Server
 		void		establishConnection();
 		void		checkClientEvents();
 		void		handleMessages();
+		void		handleError(int status, Client c);
+		void		launchAction(Client c);
+		void		pass(Client c);
 
 };
 

@@ -1,0 +1,8 @@
+ - poll eventos respuesta con mascara
+      0 0 0 0 0 0 0 1 POLLIN
+	  0 1 0 0 0 0 0 1 EVENTO RESPUESTA
+	  
+	  devuelve true
+- handelear multiples clientes en un puerto del servidor. Crear nuevo socket con puerto autoasignado y dejar libre el de escucha
+
+pollhup for disconnect client
