@@ -28,16 +28,24 @@ int	Server::reallocPollFd(int index)
 	
 	struct pollfd	*neopfd;
 	int		i;
+	int		y;
 
-	i = index;
+	i = 0;
+	y = 0;
 	// +2 --> uno por el cliente nuevo y otro por el listener
 	neopfd = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline));
-	while (i < nClientsOnline) 
+	while (i < nClientsOnline + 1) 
 	{
-		neopfd[i].fd = clientSock[i + 1].fd;
-		neopfd[i].events = clientSock[i + 1].events;
-		neopfd[i].revents = clientSock[i + 1].revents;
+		if (i == index)
+		{
+			i++;
+			continue ;
+		}
+		neopfd[y].fd = clientSock[i].fd;
+		neopfd[y].events = clientSock[i].events;
+		neopfd[y].revents = clientSock[i].revents;
 		i++;
+		y++;
 	}
 	free(clientSock);
 	clientSock = neopfd;
@@ -90,6 +98,47 @@ bool	Server::launchServer()
 	return (this->handleConnections());
 }
 
+void	Server::establishConnection()
+{
+	std::cout << "Someones connecting" << std::endl;
+	nClientsOnline = reallocPollFd(-1);
+	std::cout << nClientsOnline << std::endl;
+	clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
+	clientSock[nClientsOnline].events = POLLIN;
+	clients.push_back(Client(clientSock[nClientsOnline].fd, psswd));
+}
+
+void	Server::checkClientEvents()
+{
+	for (int y = 1; y < nClientsOnline + 1; y++)
+	{
+		if (clientSock[y].revents & POLLIN && clientSock[y].fd != -1)
+		{
+			int nread = recv(clientSock[y].fd, this->recData, 512, 0);
+			this->recData[nread] = '\0';
+			std::cout << "I am: " << y << std::endl;
+			std::cout << recData << std::endl;
+			clients[y - 1].setMsg(std::string(recData));
+		}
+	}
+}
+
+void	Server::handleMessages()
+{
+	std::vector<Client>::iterator y;
+
+	for (y = clients.begin(); y != clients.end(); y++)
+	{
+		if (y->getMsg() != "")
+		{
+			y->parseMsg();
+			y->setMsg("");
+		}
+	}
+}
+			
+
+
 bool	Server::handleConnections()
 {
 	bool		error = 0;
@@ -103,30 +152,11 @@ bool	Server::handleConnections()
 		}
 		if (clientSock[0].revents & POLLIN)
 		{
-			std::cout << "Someones connecting" << std::endl;
-			nClientsOnline = reallocPollFd(-1);
-			std::cout << nClientsOnline << std::endl;
-			clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
-			clientSock[nClientsOnline].events = POLLIN;
+			establishConnection();
 		}
-		for (int y = 1; y < nClientsOnline + 1; y++)
-		{
-			if (clientSock[y].revents & POLLIN && clientSock[y].fd != -1)
-			{
-				//harcodeando again | tamaño del mensaje
-				int nread = recv(clientSock[y].fd, this->recData, 500, 0);
-				this->recData[nread] = '\0';
-				std::cout << "In the name of the: " << y << std::endl;
-				send(clientSock[y].fd, "response", 8, 0);
-				std::cout << recData << std::endl;
-				if (std::string(recData) == "exit")
-				{
-					close(clientSock[y].fd);
-					reallocPollFd(y);
-				}
-			}
-		}
-			//close socket ??
+		checkClientEvents();
+		handleMessages();
+	
 	}
 	return 0;
 }

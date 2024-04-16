@@ -10,9 +10,10 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <iostream>
+#include <vector>
 #include <poll.h>
 #include <stdlib.h>
-
+#include <Client.hpp>
 
 
 class Server
@@ -22,10 +23,11 @@ class Server
 		std::string	psswd;
 		int		nClientsOnline;
 		//harcodeo del tamaño del mensaje recibido
-		char 		recData[500];
+		char 		recData[512];
 		struct addrinfo	*rp;
 		struct pollfd	*clientSock;
 		int		serverSock;
+		std::vector<Client>	clients;
  	public:
     		Server(char *port, char *passwd);
     		Server();
@@ -35,6 +37,9 @@ class Server
 		//deprecated
 		int		lookForAvailableSocket();
 		int		reallocPollFd(int index);
+		void		establishConnection();
+		void		checkClientEvents();
+		void		handleMessages();
 
 };
 
