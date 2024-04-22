@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <iostream>
 #include <vector>
+#include <map>
 #include <poll.h>
 #include <stdlib.h>
 #include <Client.hpp>
@@ -28,6 +29,7 @@ class Server
 		struct pollfd	*clientSock;
 		int		serverSock;
 		std::vector<Client>	clients;
+		//std::map<std::string, std::function<void()> > commands;
  	public:
     		Server(char *port, char *passwd);
     		Server();
@@ -42,7 +44,9 @@ class Server
 		void		handleMessages();
 		void		handleError(int status, Client c);
 		void		launchAction(Client c);
-		void		pass(Client c);
+		void		pass(Client c) const;
+		void		pollfdcpy(struct pollfd *src, int size);
+		void		printpfd(struct pollfd *src, int size);
 
 };
 

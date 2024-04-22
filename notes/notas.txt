@@ -6,3 +6,11 @@
 - handelear multiples clientes en un puerto del servidor. Crear nuevo socket con puerto autoasignado y dejar libre el de escucha
 
 pollhup for disconnect client
+
+
+Un tamaño de buffer de 512 bytes
+   se usa para guardar un mensaje completo, sin embargo, normalmente
+   podrá alojar varios comandos. El buffer privado se analiza después
+   de cada operación de lectura de mensajes válidos. Al tratar con
+   múltiples mensajes de un cliente en el buffer, debe tenerse cuidado
+   en caso de que uno resulte en la eliminación del cliente.

@@ -23,7 +23,7 @@ std::vector<std::string> Client::split(std::string na, char c)
 
 
 
-Client::Client(int socket, std::string psswdServ) : fd(socket), servPsswd(psswdServ) 
+Client::Client(int socket, int i) : fd(socket), id(i)
 {
 }
 
@@ -51,7 +51,7 @@ int Client::cmdAnalyzer(std::string cmd)
 		return 0;
 	else if (cmd == "NICK")
 		return 0;
-	return 0;
+	return 1;
 }
 
 void	Client::setNick(std::string n)
@@ -73,16 +73,25 @@ int Client::parseMsg()
 	error = 0;
 	i = 0;
 	tokens = split(this->msg, ' ');
-	std::cout << "HOLA" << std::endl;
-	std::cout << tokens[0] << tokens.size() << std::endl;
+	//std::cout << "HOLA" << std::endl;
+	//std::cout << tokens[0] << tokens.size() << std::endl;
 	while (i < tokens.size())
 	{
 		if (i == 0)
+		{
+		//	std::cout << "wwweee" << std::endl;
 			error = cmdAnalyzer(tokens[i]);
+		}
 		if (error == 0)
+		{
+		//	std::cout << "www1111" << std::endl;
 			params.push_back(tokens[i]);
+		}
 		else if (error == 1)
+		{
+		//	std::cout << "www222" << std::endl;
 			return 1;
+		}
 
 		i++;
 	}

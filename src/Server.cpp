@@ -4,40 +4,57 @@ Server::Server()
 {
 }
 
+void	Server::printpfd(struct pollfd *src, int size)
+{
+	int	i = 0;
+	std::cout << "FDS" << std::endl;
+	while (i < size)
+	{
+		std::cout << src[i++].fd << std::endl;
+	}
+}
+
+
+
+void	Server::pollfdcpy(struct pollfd *src, int size)
+{
+	int	i = 0;
+	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (size));
+	while (i < size)
+	{
+		clientSock[i].fd = src[i].fd;
+		clientSock[i].events = src[i].events;
+		clientSock[i].revents = src[i].revents;
+		i++;
+	}
+}
+
 int	Server::reallocPollFd(int index)
 {
-	struct pollfd *neo;
-	int				i;
-	int				y;
-	int				nClients;
-	int				limit;
+	int	size = index < 0 ? nClientsOnline + 2 : nClientsOnline;
+	int	nClients = index < 0 ? nClientsOnline + 1 : nClientsOnline - 1;
+	struct pollfd neopfd[size];
+	int	i;
+	int	y;
 
-	if (index < 0)
-	{
-		neo = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline + 2));
-		limit = nClientsOnline + 1;
-		nClients = nClientsOnline + 1;
-	}
-	else
-	{
-		neo = (struct pollfd *)malloc(sizeof(pollfd) * (nClientsOnline));
-		limit = nClientsOnline + 1;
-		nClients = nClientsOnline - 1;
-	}
 	i = 0;
 	y = 0;
-	while (i < limit)
+	while (i < nClientsOnline + 1)
 	{
 		if (i == index)
 		{
 			i++;
 			continue ;
 		}
-		neo[y].fd = clientSock[i].fd;
-		neo[y].events = clientSock[i].events;
-		neo[y++].revents = clientSock[i++].revents;
+		neopfd[y].fd = clientSock[i].fd;
+		neopfd[y].events = clientSock[i].events;
+		neopfd[y++].revents = clientSock[i++].revents;
 	}
-	return (nClients);
+	free(clientSock);
+	this->clientSock = (struct pollfd *)malloc(sizeof(struct pollfd) * (size));
+	memcpy(clientSock, neopfd, sizeof(struct pollfd) * size);
+	//pollfdcpy(neopfd, size);
+	return nClients;
 }
 
 Server::Server(char *p, char *pd) : port(p)
@@ -45,7 +62,8 @@ Server::Server(char *p, char *pd) : port(p)
 	psswd = std::string(pd);
 	nClientsOnline = 0;
 	// 1 para el listener
-	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (1));
+	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (3));
+	//commands["PASS"] = &Server::pass;
 }	
 
 bool	Server::launchServer()
@@ -90,38 +108,44 @@ void	Server::establishConnection()
 {
 	std::cout << "Someones connecting" << std::endl;
 	nClientsOnline = reallocPollFd(-1);
+	//nClientsOnline++;
 	std::cout << nClientsOnline << std::endl;
 	clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
 	clientSock[nClientsOnline].events = POLLIN;
-	clients.push_back(Client(clientSock[nClientsOnline].fd, psswd));
+	clients.push_back(Client(clientSock[nClientsOnline].fd, nClientsOnline));
 }
 
 void	Server::checkClientEvents()
 {
+	std::vector<int>	pos;
 	for (int y = 1; y < nClientsOnline + 1; y++)
 	{
 		if (clientSock[y].revents & POLLIN)
 		{
 			int nread = recv(clientSock[y].fd, this->recData, 512, 0);
+			if (nread <= 0)
+			{
+				pos.push_back(y);
+				continue ;
+			}
 			this->recData[nread] = '\0';
 			std::cout << "I am: " << y << std::endl;
 			std::cout << recData << std::endl;
 			std::cout << clients.size() << std::endl;
-			clients[0].setMsg(recData);
+			clients[y - 1].setMsg(recData);
+		}
+		if (clientSock[y].revents & (POLLHUP | POLLERR | POLLNVAL))
+		{
+				pos.push_back(y);
+				continue ;
 		}
 	}
-	int	i = 0;
-	while (++i < nClientsOnline + 1)
+	std::vector<Client>::iterator y = clients.begin();
+	for (std::vector<int>::iterator it = pos.begin(); it != pos.end(); it++)
 	{
-		if (clientSock[i].revents & POLLHUP)
-		{
-			std::cout << "JUGGLES" << std::endl;
-			nClientsOnline = reallocPollFd(i);
-			close(clientSock[i].fd);
-			std::cout << "JUGGLES" << std::endl;
-			std::cout << nClientsOnline << " and i am: " << i <<std::endl;
-			i--;
-		}
+		close(clientSock[*it].fd);
+		clients.erase(y + (*it - 1));
+		nClientsOnline = reallocPollFd(*it);
 	}
 
 }
@@ -130,7 +154,7 @@ void	Server::handleError(int status, Client c)
 {
 	if (status == 1)
 	{
-		std::cerr << "Not valid command from " << c.getNick() << std::endl;
+		std::cerr << "Not valid command from " << c.getId() << std::endl;
 	}
 	else if (status == 2)
 	{
@@ -141,7 +165,7 @@ void	Server::handleError(int status, Client c)
 	}
 }
 
-void	Server::pass(Client c)
+void	Server::pass(Client c) const
 {
 	std::string msg("PASS ");
 	msg += psswd;
@@ -151,10 +175,13 @@ void	Server::pass(Client c)
 
 void	Server::launchAction(Client c)
 {
-	//if (c.getParams()[0] == "PASS")
+	std::string command = c.getParams()[0];
+	if (command == "PASS")
 	{
-		pass(c);
+		//std::cout << "ey" << std::endl;
+		this->pass(c);
 	}
+	//this->commands[c.getParams()[0]];
 }
 
 void	Server::handleMessages()
@@ -170,9 +197,10 @@ void	Server::handleMessages()
 			if (parseStatus != 0)
 			{
 				handleError(parseStatus, *y);
-				return ;
+				//return ;
+				continue ;
 			}
-			this->launchAction(*y);
+			this->launchAction(*(y));
 			y->setMsg("");
 		}
 	}
@@ -182,8 +210,7 @@ void	Server::handleMessages()
 
 bool	Server::handleConnections()
 {
-	bool		error = 0;
-	while (error == 0)
+	while (1)
 	{
 		//harcodeo de nclientes + server sockets y el timeout
 		if (poll(clientSock, nClientsOnline + 1, 50000) < 0)
