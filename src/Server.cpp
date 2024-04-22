@@ -112,12 +112,13 @@ void	Server::establishConnection()
 	std::cout << nClientsOnline << std::endl;
 	clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
 	clientSock[nClientsOnline].events = POLLIN;
-	clients.push_back(Client(clientSock[nClientsOnline].fd, nClientsOnline));
+	clients.push_back(Client(clientSock[nClientsOnline].fd, nClientsOnline, psswd));
 }
 
 void	Server::checkClientEvents()
 {
 	std::vector<int>	pos;
+	//std::cout << "alakazo" << std::endl;
 	for (int y = 1; y < nClientsOnline + 1; y++)
 	{
 		if (clientSock[y].revents & POLLIN)
@@ -129,9 +130,9 @@ void	Server::checkClientEvents()
 				continue ;
 			}
 			this->recData[nread] = '\0';
-			std::cout << "I am: " << y << std::endl;
-			std::cout << recData << std::endl;
-			std::cout << clients.size() << std::endl;
+			//std::cout << "I am: " << y << std::endl;
+			//std::cout << recData << std::endl;
+			//std::cout << clients.size() << std::endl;
 			clients[y - 1].setMsg(recData);
 		}
 		if (clientSock[y].revents & (POLLHUP | POLLERR | POLLNVAL))
@@ -175,13 +176,7 @@ void	Server::pass(Client c) const
 
 void	Server::launchAction(Client c)
 {
-	std::string command = c.getParams()[0];
-	if (command == "PASS")
-	{
-		//std::cout << "ey" << std::endl;
-		this->pass(c);
-	}
-	//this->commands[c.getParams()[0]];
+	c.handleCmd();
 }
 
 void	Server::handleMessages()
@@ -191,17 +186,18 @@ void	Server::handleMessages()
 
 	for (y = clients.begin(); y != clients.end(); y++)
 	{
-		if (y->getMsg() != "")
+		if (y->getMsg() != "")// && y->getParseStatus() == 1)
 		{
 			parseStatus = y->parseMsg();
 			if (parseStatus != 0)
 			{
-				handleError(parseStatus, *y);
+				//handleError(parseStatus, *y);
 				//return ;
 				continue ;
 			}
+			//std::cout << "ee" << std::endl;
 			this->launchAction(*(y));
-			y->setMsg("");
+			//y->setMsg("");
 		}
 	}
 }
@@ -212,7 +208,6 @@ bool	Server::handleConnections()
 {
 	while (1)
 	{
-		//harcodeo de nclientes + server sockets y el timeout
 		if (poll(clientSock, nClientsOnline + 1, 50000) < 0)
 		{
 			std::cerr << "poll() error" << std::endl;
