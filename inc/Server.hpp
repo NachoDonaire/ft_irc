@@ -22,6 +22,7 @@ class Server
 	private:
 		char		*port;
 		std::string	psswd;
+		std::string	hostName;
 		int		nClientsOnline;
 		//harcodeo del tamaño del mensaje recibido
 		char 		recData[512];
@@ -31,7 +32,7 @@ class Server
 		std::vector<Client>	clients;
 		//std::map<std::string, std::function<void()> > commands;
  	public:
-    		Server(char *port, char *passwd);
+    		Server(char *port, char *passwd, std::string hostname);
     		Server();
     		~Server();
 		bool		handleConnections();

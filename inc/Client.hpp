@@ -23,12 +23,14 @@ class Client
 		std::map<int, std::vector<std::string> >	cmd;
 		std::string	psswd;
 		std::string	servPsswd;
+		std::string	hostName;
 		std::string	nickname;
 		std::string	username;
  	public:
-		Client(int fd, int i, std::string sp);
+		Client(int fd, int i, std::string sp, std::string hn);
 		void	setMsg(std::string message);
 		void	setUser(std::string u) { this->username = u;};
+		void	cap(std::vector<std::string> params);
 		void	setPsswd(std::string p);
 		void	setNick(std::string n);
 		int	parseMsg();
@@ -50,8 +52,9 @@ class Client
 		int	nick(std::vector<std::string> params);
 		int	user(std::vector<std::string> params);
 		void	notEnoughParams(std::vector<std::string> params);
-		void	quit();
+		void	quit(std::vector<std::string> params);
 		void	handleCmd();
+		int	welcome();
 };
 
 #endif

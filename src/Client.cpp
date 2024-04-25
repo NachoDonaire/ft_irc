@@ -17,12 +17,38 @@ void	Client::handleCmd()
 void	Client::launchAction(std::vector<std::string> params)
 {
 	std::string cmd = params[0];
+	//std::cout << "iusa" << std::endl;
+	//std::cout << cmd << std::endl;
 	if (cmd == "PASS")
 		pass(params);
 	else if (cmd == "NICK")
 		nick(params);
 	else if (cmd == "USER")
 		user(params);
+	else if (cmd == "CAP")
+		cap(params);
+	else if (cmd == "QUIT")
+		quit(params);
+	else if (cmd == "")
+		return ;
+	else
+	{
+		std::string notValidCmd("Not valid cmd\r\n");
+		send(fd, notValidCmd.c_str(), notValidCmd.size(), 0);
+	}
+}
+
+void	Client::cap(std::vector<std::string> params)
+{
+	std::string response(hostName);
+
+	if (params[1] == "LS")
+		response += " CAP * LS :kajuto por aqui, kajuto por alla\r\n";
+	else if (params[1] == "END")
+		response += " 381 " + getNick() + " : Capabilities displayed properly !\r\n";
+
+
+	send(fd, response.c_str(), response.size(), 0);
 }
 
 
@@ -60,7 +86,7 @@ int	Client::getParseStatus()
 }
 
 
-Client::Client(int socket, int i, std::string sp) : fd(socket), id(i), servPsswd(sp)
+Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), id(i), servPsswd(sp), hostName(hn)
 {
 	parseStatus = 1;
 	off = 0;
@@ -140,8 +166,9 @@ int Client::parseMsg()
 
 void	Client::notEnoughParams(std::vector<std::string> params)
 {
-	std::string msg("461 ");
+	std::string msg(hostName);
 
+	msg += " 461 ";
 	msg += params[0];
 	msg += " :Not enough or too much params for ";
 	msg += params[0];
@@ -151,49 +178,83 @@ void	Client::notEnoughParams(std::vector<std::string> params)
 	send(fd, msg.c_str(), msg.size(), 0);
 }
 
-int	Client::user(std::vector<std::string> params)
+int	Client::pass(std::vector<std::string> params)
 {
-	if (params.size() != 5)
-	{
-		notEnoughParams(params);
-		return 3;
-	}
-	setUser(params[1]);
-	return 0;
-}
-
-int	Client::nick(std::vector<std::string> params)
-{
-	if (params.size() != 2)
-	{
-		notEnoughParams(params);
-		return 3;
-	}
-	nickname = params[0];
-	return 0;
-}
-
-void	Client::quit()
-{
-	off = 1;
-	close(fd);
-}
-
-int Client::pass(std::vector<std::string> params)
-{
-	std::string msg("");
-	std::string error("464 ");
-	
-	msg += getUser();
-	error += getUser();
-	msg += " :Welcome to ircserv !\r\n";
-	error += " :Not valid password\r\n";
 	if (params.size() != 2)
 	{
 		notEnoughParams(params);
 		return 3;
 	}
 	setPsswd(params[1]);
+	//welcome(params);
+	return 0;
+}
+
+int	Client::user(std::vector<std::string> params)
+{
+	if (params.size() < 5)
+	{
+		notEnoughParams(params);
+		return 3;
+	}
+	setUser(params[1]);
+	welcome();
+	return 0;
+}
+
+int	Client::nick(std::vector<std::string> params)
+{
+	std::string response(hostName);
+
+	response += " NICK :" + params[1] + "\r\n";
+	if (params.size() != 2)
+	{
+		notEnoughParams(params);
+		return 3;
+	}
+	nickname = params[1];
+
+	send(fd, response.c_str(), response.size(), 0);
+	return 0;
+}
+
+void	Client::quit(std::vector<std::string> params)
+{
+	off = 1;
+	std::string msg(hostName);
+	if (params.size() <= 1)
+		msg += " QUIT: No leaving message";
+	else
+	{
+		std::string quitMsg(&params[1].c_str()[1]);
+		std::cout << "eeepa " << quitMsg << std::endl;
+		msg += " QUIT: ";
+		msg += quitMsg;
+	}
+
+	send(fd, msg.c_str(), msg.size(), 0);
+	close(fd);
+}
+
+int Client::welcome()
+{
+	if (psswd == "" || nickname == "" || username == "")
+		return -1;
+	std::string msg(hostName);
+	std::string error(hostName);
+	
+	/*msg += getUser();
+	error += getUser();
+	msg += " :Welcome to ircserv !\r\n";
+	error += " :Not valid password\r\n";
+	*/
+	//if (params.size() != 2)
+	//{
+	//	notEnoughParams(params);
+	//	return 3;
+	//}
+	///setPsswd(params[1]);
+	msg += " 001 " + getNick() + " :Welcome to ircserv !\r\n";
 	if (psswd == servPsswd)
 	{
 		send(fd, msg.c_str(), msg.size(), 0);
@@ -201,7 +262,8 @@ int Client::pass(std::vector<std::string> params)
 	else
 	{
 		send(fd, error.c_str(), error.size(), 0);
-		quit();
+		close(fd);
+		//quit();
 		return 2;
 	}
 	return (0);

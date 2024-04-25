@@ -57,10 +57,11 @@ int	Server::reallocPollFd(int index)
 	return nClients;
 }
 
-Server::Server(char *p, char *pd) : port(p)
+Server::Server(char *p, char *pd, std::string hn) : port(p)
 {
 	psswd = std::string(pd);
 	nClientsOnline = 0;
+	hostName = hn;
 	// 1 para el listener
 	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (3));
 	//commands["PASS"] = &Server::pass;
@@ -112,7 +113,7 @@ void	Server::establishConnection()
 	std::cout << nClientsOnline << std::endl;
 	clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
 	clientSock[nClientsOnline].events = POLLIN;
-	clients.push_back(Client(clientSock[nClientsOnline].fd, nClientsOnline, psswd));
+	clients.push_back(Client(clientSock[nClientsOnline].fd, nClientsOnline, psswd, hostName));
 }
 
 void	Server::checkClientEvents()
@@ -126,12 +127,13 @@ void	Server::checkClientEvents()
 			int nread = recv(clientSock[y].fd, this->recData, 512, 0);
 			if (nread <= 0)
 			{
+				std::cout << "aqui1" << std::endl;
 				pos.push_back(y);
 				continue ;
 			}
 			this->recData[nread] = '\0';
 			//std::cout << "I am: " << y << std::endl;
-			//std::cout << recData << std::endl;
+			std::cout << recData << std::endl;
 			//std::cout << clients.size() << std::endl;
 			clients[y - 1].setMsg(recData);
 		}
@@ -144,6 +146,7 @@ void	Server::checkClientEvents()
 	std::vector<Client>::iterator y = clients.begin();
 	for (std::vector<int>::iterator it = pos.begin(); it != pos.end(); it++)
 	{
+				//std::cout << "aqui2" << std::endl;
 		close(clientSock[*it].fd);
 		clients.erase(y + (*it - 1));
 		nClientsOnline = reallocPollFd(*it);
@@ -197,7 +200,7 @@ void	Server::handleMessages()
 			}
 			//std::cout << "ee" << std::endl;
 			this->launchAction(*(y));
-			//y->setMsg("");
+			y->setMsg("");
 		}
 	}
 }
@@ -208,7 +211,7 @@ bool	Server::handleConnections()
 {
 	while (1)
 	{
-		if (poll(clientSock, nClientsOnline + 1, 50000) < 0)
+		if (poll(clientSock, nClientsOnline + 1, 3000) < 0)
 		{
 			std::cerr << "poll() error" << std::endl;
 			return 1;
