@@ -55,6 +55,7 @@ class Client
 		void	quit(std::vector<std::string> params);
 		void	handleCmd();
 		int	welcome();
+		std::string	msgGenerator(int msg, std::vector<std::string> params);
 };
 
 #endif
