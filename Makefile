@@ -1,6 +1,8 @@
-SRCS = main.cpp
+SRCS = main.cpp	\
+       Server.cpp \
+       Client.cpp
 SRDIR = src/
-NAME = ircsrv
+NAME = ircserv
 DSRC = $(addprefix $(SRDIR), $(SRCS))
 ALLC = $(DSRC)
 OBJS = $(DSRC:.cpp=.o)
@@ -10,8 +12,6 @@ RM = rm -rf
 
 all: $(NAME)
 
-#$(OBJS) : $(ALLC)
-#	$(CC) $(CFLAGS) -c $< -o $@
 $(NAME) : $(OBJS)
 	$(CC) $(CPPFLAGS) -o $(NAME) $(OBJS)
 
