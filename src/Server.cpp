@@ -177,9 +177,10 @@ void	Server::pass(Client c) const
 	send(c.getSocket(), msg.c_str(), msg.size(), 0);
 }
 
-void	Server::launchAction(Client c)
+void	Server::launchAction(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm)
 {
-	c.handleCmd();
+	Command cd(c, clients, hostName, msg, psswd, cm);
+	cd.handleCmd();
 }
 
 void	Server::handleMessages()
@@ -189,17 +190,14 @@ void	Server::handleMessages()
 
 	for (y = clients.begin(); y != clients.end(); y++)
 	{
-		if (y->getMsg() != "")// && y->getParseStatus() == 1)
+		if (y->getMsg() != "")
 		{
 			parseStatus = y->parseMsg();
 			if (parseStatus != 0)
 			{
-				//handleError(parseStatus, *y);
-				//return ;
 				continue ;
 			}
-			//std::cout << "ee" << std::endl;
-			this->launchAction(*(y));
+			this->launchAction(&(*(y)),  y->getMsg(), y->getCmd());
 			y->setMsg("");
 		}
 	}

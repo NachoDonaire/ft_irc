@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+//#include <Channel.hpp>
 
 
 class Client
@@ -16,6 +17,7 @@ class Client
 	protected:
 		int	 	fd;
 		int		off;
+		bool		registered;
 		int		id;
 		int		parseStatus;
 		std::string	msg;
@@ -26,16 +28,23 @@ class Client
 		std::string	hostName;
 		std::string	nickname;
 		std::string	username;
+		//std::vector<Channel> channels;
  	public:
 		Client(int fd, int i, std::string sp, std::string hn);
 		void	setMsg(std::string message);
+		void	printeito();
 		void	setUser(std::string u) { this->username = u;};
+		void	setRegister(bool i) { this->registered = i;};
 		void	cap(std::vector<std::string> params);
 		void	setPsswd(std::string p);
 		void	setNick(std::string n);
+		void	setOff(int n) { this->off = n;};
 		int	parseMsg();
 		int	getParseStatus();
+		std::map<int, std::vector<std::string> > getCmd() {return this->cmd;};
+		bool	getRegister() { return this->registered; };
 		int	getOff() { return this->off;};
+		std::string getPsswd() { return this->psswd;};
 		std::string getMsg() { return this->msg;};
 		std::string getUser() { return this->username;};
 		int getId() { return this->id;};

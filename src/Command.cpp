@@ -1,6 +1,26 @@
-#include <Client.hpp>
+#include <Command.hpp>
 
-std::string	Client::msgGenerator(int msg, std::vector<std::string> params)
+Command::Command(Client *l, std::vector<Client> cl, std::string hostN, std::string ms, std::string sp, std::map<int, std::vector<std::string> > cm) : msg(ms)
+{
+	clients = cl;
+	servPsswd = sp;
+	hostName = hostN;
+	launcher = l;
+	cmd = cm;
+}
+
+
+Command::~Command()
+{
+}
+
+void	Command::notEnoughParams(std::vector<std::string> params)
+{
+	std::string msg = msgGenerator(461, params);
+	send(launcher->getSocket(), msg.c_str(), msg.size(), 0);
+}
+
+std::string	Command::msgGenerator(int msg, std::vector<std::string> params)
 {
 	std::string response(hostName);
 
@@ -10,11 +30,16 @@ std::string	Client::msgGenerator(int msg, std::vector<std::string> params)
 	}
 	else if (msg == 381)
 	{
-		response += " 381 " + getNick() + " : Capabilities displayed properly !\r\n";
+		response += " 381 " + launcher->getNick() + " : Capabilities displayed properly !\r\n";
 	}
 	else if (msg == -1)
 	{
 		response += " NICK :" + params[1] + "\r\n";
+	}
+	else if (msg == 433)
+	{
+		response += " 433 * " + params[1] + " :Nickname is already in use\r\n";
+
 	}
 	else if (msg == -2)
 	{
@@ -29,7 +54,7 @@ std::string	Client::msgGenerator(int msg, std::vector<std::string> params)
 	}
 	else if (msg == 1)
 	{
-		response += " 001 " + getNick() + " :Welcome to ircserv !\r\n";
+		response += " 001 " + launcher->getNick() + " :Welcome to ircserv !\r\n";
 	}
 	if (msg == 461)
 	{
@@ -45,7 +70,7 @@ std::string	Client::msgGenerator(int msg, std::vector<std::string> params)
 
 
 
-void	Client::handleCmd()
+void	Command::handleCmd()
 {
 	for (std::map<int, std::vector<std::string> >::iterator i = cmd.begin(); i != cmd.end(); i++)
 	{
@@ -59,7 +84,7 @@ void	Client::handleCmd()
 	}
 }
 
-void	Client::launchAction(std::vector<std::string> params)
+void	Command::launchAction(std::vector<std::string> params)
 {
 	std::string cmd = params[0];
 	//std::cout << "iusa" << std::endl;
@@ -79,11 +104,11 @@ void	Client::launchAction(std::vector<std::string> params)
 	else
 	{
 		std::string notValidCmd = msgGenerator(461, params);
-		send(fd, notValidCmd.c_str(), notValidCmd.size(), 0);
+		send(launcher->getSocket(), notValidCmd.c_str(), notValidCmd.size(), 0);
 	}
 }
 
-void	Client::cap(std::vector<std::string> params)
+void	Command::cap(std::vector<std::string> params)
 {
 	std::string response(hostName);
 
@@ -93,11 +118,11 @@ void	Client::cap(std::vector<std::string> params)
 		response = msgGenerator(381, params);
 
 
-	send(fd, response.c_str(), response.size(), 0);
+	send(launcher->getSocket(), response.c_str(), response.size(), 0);
 }
 
 
-std::vector<std::string> Client::split(std::string na, const char *c)
+std::vector<std::string> Command::split(std::string na, const char *c)
 {
 	std::vector<std::string> tokens;
 	std::string		 token;
@@ -125,34 +150,7 @@ std::vector<std::string> Client::split(std::string na, const char *c)
 	return tokens;
 }
 
-int	Client::getParseStatus()
-{
-	return this->parseStatus;
-}
-
-
-Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), id(i), servPsswd(sp), hostName(hn)
-{
-	parseStatus = 1;
-	off = 0;
-	registered = 0;
-}
-
-void	Client::setMsg(std::string message)
-{
-	this->msg = message;
-}
-
-Client::Client()
-{
-}
-
-
-Client::~Client()
-{
-}
-
-int Client::cmdAnalyzer(std::string cmd)
+int Command::cmdAnalyzer(std::string cmd)
 {
 	if (cmd == "PASS")
 		return 0;
@@ -167,17 +165,7 @@ int Client::cmdAnalyzer(std::string cmd)
 	return 1;
 }
 
-void	Client::setNick(std::string n)
-{
-	this->nickname = n;
-}
-
-void	Client::setPsswd(std::string p)
-{
-	this->psswd = p;
-}
-
-int Client::parseMsg()
+int Command::parseMsg()
 {
 	std::vector<std::string> tokens;
 	std::vector<std::string> parameters;
@@ -197,87 +185,91 @@ int Client::parseMsg()
 	return (0);
 }
 
-void	Client::notEnoughParams(std::vector<std::string> params)
-{
-	std::string msg = msgGenerator(461, params);
-	send(fd, msg.c_str(), msg.size(), 0);
-}
-
-int	Client::pass(std::vector<std::string> params)
+int	Command::pass(std::vector<std::string> params)
 {
 	if (params.size() != 2)
 	{
 		notEnoughParams(params);
 		return 3;
 	}
-	setPsswd(params[1]);
-	//welcome(params);
+	launcher->setPsswd(params[1]);
 	return 0;
 }
 
-//queda por ver que el user es unico
-int	Client::user(std::vector<std::string> params)
+int	Command::user(std::vector<std::string> params)
 {
-	if (params.size() < 5)
+	/*if (params.size() < 5)
 	{
 		notEnoughParams(params);
 		return 3;
-	}
-	setUser(params[1]);
+	}*/
+	//std::cout << "amos a ver : " << params[1] << std::endl;
+	launcher->setUser(params[1]);
+	//std::cout << launcher->getUser() << std::endl;
 	welcome();
 	return 0;
 }
 
 //queda por comprobar que el nick es unico
-int	Client::nick(std::vector<std::string> params)
+int	Command::nick(std::vector<std::string> params)
 {
 	std::string response = msgGenerator(-1, params);
 
-	if (params.size() != 2)
+	/*if (params.size() != 2)
 	{
 		notEnoughParams(params);
 		return 3;
+	}*/
+	for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); it++)
+	{
+		//std::cout << "alla va un cliente : ";
+		//std::cout << launcher->getNick() << std::endl;
+		//launcher->printeito();
+		//(*it).printeito();
+		if ((*it).getNick() == params[1])
+		{
+			std::string inUse = msgGenerator(433, params);
+			send(launcher->getSocket(), inUse.c_str(), inUse.size(), 0);
+			return 2;
+		}
 	}
-	nickname = params[1];
+	launcher->setNick(params[1]);
 
-	send(fd, response.c_str(), response.size(), 0);
+	send(launcher->getSocket(), response.c_str(), response.size(), 0);
 	return 0;
 }
 
-void	Client::quit(std::vector<std::string> params)
+void	Command::quit(std::vector<std::string> params)
 {
-	off = 1;
+	launcher->setOff(1);
 	std::string msg = msgGenerator(-2, params);
-	send(fd, msg.c_str(), msg.size(), 0);
-	close(fd);
+	send(launcher->getSocket(), msg.c_str(), msg.size(), 0);
+	close(launcher->getSocket());
 }
 
-void	Client::printeito()
-{
-	std::cout << "pass : " << psswd << std::endl;
-	std::cout << "nick : " << nickname << std::endl;
-	std::cout << "user : " << username << std::endl;
-	std::cout << "socket : " << fd << std::endl;
-}
-
-int Client::welcome()
+int Command::welcome()
 {
 	std::vector<std::string> tuke;
-	if (psswd == "" || nickname == "" || username == "")
+	if (launcher->getPsswd() == "" || launcher->getNick() == "" || launcher->getUser() == "")
+	{
+		std::cout << "uuuuuu" << std::endl;
 		return -1;
-	if (registered == 1)
+	}
+	if (launcher->getRegister() == 1)
 		return -1;
 	std::string msg = msgGenerator(1, tuke);
 	std::string error(hostName);
-	if (psswd == servPsswd)
+	if (launcher->getPsswd() == servPsswd)
 	{
-		send(fd, msg.c_str(), msg.size(), 0);
+		launcher->setRegister(1);
+		send(launcher->getSocket(), msg.c_str(), msg.size(), 0);
 	}
 	else
 	{
-		send(fd, error.c_str(), error.size(), 0);
-		close(fd);
+		send(launcher->getSocket(), error.c_str(), error.size(), 0);
+		close(launcher->getSocket());
 		return 2;
 	}
 	return (0);
 }
+
