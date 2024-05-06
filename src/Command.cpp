@@ -104,7 +104,8 @@ void	Command::launchAction(std::vector<std::string> params)
 	else
 	{
 		std::string notValidCmd = msgGenerator(461, params);
-		send(launcher->getSocket(), notValidCmd.c_str(), notValidCmd.size(), 0);
+		launcher->getCommands().push_back(notValidCmd);
+		//send(launcher->getSocket(), notValidCmd.c_str(), notValidCmd.size(), 0);
 	}
 }
 
@@ -193,6 +194,7 @@ int	Command::pass(std::vector<std::string> params)
 		return 3;
 	}
 	launcher->setPsswd(params[1]);
+	launcher->setRegister(2);
 	return 0;
 }
 
@@ -262,6 +264,7 @@ int Command::welcome()
 	if (launcher->getPsswd() == servPsswd)
 	{
 		launcher->setRegister(1);
+		//launcher->setPollOut(0);
 		send(launcher->getSocket(), msg.c_str(), msg.size(), 0);
 	}
 	else

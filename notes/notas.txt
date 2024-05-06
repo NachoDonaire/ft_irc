@@ -14,3 +14,10 @@ Un tamaño de buffer de 512 bytes
    de cada operación de lectura de mensajes válidos. Al tratar con
    múltiples mensajes de un cliente en el buffer, debe tenerse cuidado
    en caso de que uno resulte en la eliminación del cliente.
+
+Los nombres de canales son cadenas (que empiezan con '&' o '#') de
+   hasta 200 caracteres. Aparte del requisito de que el primer carácter
+   sea un '&' o un '#', la única restricción es que no puede contener
+   espacios en blanco (' '), control G (^G o ASCII 7), o una coma (',',
+   que se usa como separador de listas de parámetros).
+
