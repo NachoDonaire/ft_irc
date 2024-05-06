@@ -100,7 +100,7 @@ bool	Server::launchServer()
 	}
 	//otro hardcodeo de un 5 que refiere al maximo numeros de posibles conexiones | hay que verlo
 	this->clientSock[0].fd = serverSock;
-	this->clientSock[0].events = POLLIN;
+	this->clientSock[0].events = (POLLIN);// | POLLOUT);
 	listen(serverSock, 5);
 	return (this->handleConnections());
 }
@@ -112,7 +112,7 @@ void	Server::establishConnection()
 	//nClientsOnline++;
 	std::cout << nClientsOnline << std::endl;
 	clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
-	clientSock[nClientsOnline].events = POLLIN;
+	clientSock[nClientsOnline].events = (POLLIN); 
 	clients.push_back(Client(clientSock[nClientsOnline].fd, nClientsOnline, psswd, hostName));
 }
 
@@ -120,8 +120,10 @@ void	Server::checkClientEvents()
 {
 	std::vector<int>	pos;
 	//std::cout << "alakazo" << std::endl;
+	
 	for (int y = 1; y < nClientsOnline + 1; y++)
 	{
+		std::cout << "revents: " << clientSock[y].revents << std::endl;
 		if (clientSock[y].revents & POLLIN)
 		{
 			int nread = recv(clientSock[y].fd, this->recData, 512, 0);
@@ -136,6 +138,8 @@ void	Server::checkClientEvents()
 			std::cout << recData << std::endl;
 			//std::cout << clients.size() << std::endl;
 			clients[y - 1].setMsg(recData);
+			if (clients[y - 1].getRegister() == 2)
+				clients[y - 1].setPollOut(1);
 		}
 		if (clientSock[y].revents & (POLLHUP | POLLERR | POLLNVAL))
 		{
@@ -177,9 +181,12 @@ void	Server::pass(Client c) const
 	send(c.getSocket(), msg.c_str(), msg.size(), 0);
 }
 
-void	Server::launchAction(Client c)
+void	Server::launchAction(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm)
 {
-	c.handleCmd();
+	Command cd(c, clients, hostName, msg, psswd, cm);
+	std::cout << "pollout: " << c->getPollOut() << std::endl;
+	
+	cd.handleCmd();
 }
 
 void	Server::handleMessages()
@@ -189,17 +196,14 @@ void	Server::handleMessages()
 
 	for (y = clients.begin(); y != clients.end(); y++)
 	{
-		if (y->getMsg() != "")// && y->getParseStatus() == 1)
+		if (y->getMsg() != "")
 		{
 			parseStatus = y->parseMsg();
 			if (parseStatus != 0)
 			{
-				//handleError(parseStatus, *y);
-				//return ;
 				continue ;
 			}
-			//std::cout << "ee" << std::endl;
-			this->launchAction(*(y));
+			this->launchAction(&(*(y)),  y->getMsg(), y->getCmd());
 			y->setMsg("");
 		}
 	}
@@ -211,6 +215,11 @@ bool	Server::handleConnections()
 {
 	while (1)
 	{
+		for (int y = 1; y < nClientsOnline + 1; y++)
+		{
+			if (clients[y - 1].getPollOut() == 1)
+				clientSock[y].events = (POLLIN | POLLOUT);
+		}
 		if (poll(clientSock, nClientsOnline + 1, 3000) < 0)
 		{
 			std::cerr << "poll() error" << std::endl;
@@ -220,8 +229,15 @@ bool	Server::handleConnections()
 		{
 			establishConnection();
 		}
-		checkClientEvents();
-		handleMessages();
+		checkClientEvents(); // QUTAMOS POLLOUT EVENTS
+		handleMessages(); // MARCAMOS FLAG POLLOUT
+		for (int y = 1; y < nClientsOnline + 1; y++)
+		{
+			if (clients[y - 1].getPollOut() == 0)
+				clientSock[y].events = (POLLIN);
+		}
+	
+
 	
 	}
 	return 0;

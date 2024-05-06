@@ -15,6 +15,7 @@
 #include <poll.h>
 #include <stdlib.h>
 #include <Client.hpp>
+#include <Command.hpp>
 
 
 class Server
@@ -44,7 +45,7 @@ class Server
 		void		checkClientEvents();
 		void		handleMessages();
 		void		handleError(int status, Client c);
-		void		launchAction(Client c);
+		void		launchAction(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm);
 		void		pass(Client c) const;
 		void		pollfdcpy(struct pollfd *src, int size);
 		void		printpfd(struct pollfd *src, int size);

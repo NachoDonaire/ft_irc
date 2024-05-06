@@ -65,7 +65,11 @@ void	Client::launchAction(std::vector<std::string> params)
 	//std::cout << "iusa" << std::endl;
 	//std::cout << cmd << std::endl;
 	if (cmd == "PASS")
+	{
 		pass(params);
+	std::cout << "a ver" << std::endl;
+	std::cout << psswd << std::endl;
+	}
 	else if (cmd == "NICK")
 		nick(params);
 	else if (cmd == "USER")
@@ -135,8 +139,6 @@ Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), 
 {
 	parseStatus = 1;
 	off = 0;
-	registered = 0;
-	//pollout = 1;
 }
 
 void	Client::setMsg(std::string message)
@@ -211,6 +213,8 @@ int	Client::pass(std::vector<std::string> params)
 		notEnoughParams(params);
 		return 3;
 	}
+	std::cout << "a ver" << std::endl;
+	std::cout << params[1] << std::endl;
 	setPsswd(params[1]);
 	//welcome(params);
 	return 0;
@@ -253,29 +257,29 @@ void	Client::quit(std::vector<std::string> params)
 	close(fd);
 }
 
-void	Client::printeito()
-{
-	std::cout << "pass : " << psswd << std::endl;
-	std::cout << "nick : " << nickname << std::endl;
-	std::cout << "user : " << username << std::endl;
-	std::cout << "socket : " << fd << std::endl;
-}
-
 int Client::welcome()
 {
 	std::vector<std::string> tuke;
+	/*if (this->psswd == "")
+		std::cout << "psswd" << std::endl;
+	if (this->nickname == "")
+		std::cout << "nick" << std::endl;
+	if (username == "")
+		std::cout << "username" << std::endl;
 	if (psswd == "" || nickname == "" || username == "")
-		return -1;
-	if (registered == 1)
-		return -1;
+	{
+	std::cout << "qaaaa" << std::endl;
+	v*/
 	std::string msg = msgGenerator(1, tuke);
 	std::string error(hostName);
-	if (psswd == servPsswd)
+	if (this->psswd == servPsswd)
 	{
+	std::cout << "holiiii1" << std::endl;
 		send(fd, msg.c_str(), msg.size(), 0);
 	}
 	else
 	{
+	std::cout << "holiiii2" << std::endl;
 		send(fd, error.c_str(), error.size(), 0);
 		close(fd);
 		return 2;
