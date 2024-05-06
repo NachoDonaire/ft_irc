@@ -55,6 +55,7 @@ class Client
 		//std::vector<std::string>	getParams() { return this->params; };
 		std::string getNick() { return this->nickname;};
 		int	getSocket() { return this->fd;};
+		std::vector<std::string> getCommands() { return this->commands;};
     		Client();
     		~Client();
 		int	cmdAnalyzer(std::string cmd);
