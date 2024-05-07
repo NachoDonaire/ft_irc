@@ -1,8 +1,55 @@
 #include <Server.hpp>
+#include <stdio.h>
 
 Server::Server()
 {
 }
+
+std::string	Server::msgGenerator(int msg, std::vector<std::string> params, Client c)
+{
+	std::string response(hostName);
+
+	std::cout << c.getStatus() << std::endl;
+	if (msg == CMD_NOTFOUND)
+	{
+		response += " 421 " + params[0] + " :Unknown command\r\n";
+	}
+	else if (msg == NICK_OK)
+	{
+		response += " 381 " + c.getNick() + " : Capabilities displayed properly !\r\n";
+	}
+	else if (msg == NICK_REPEATED)
+	{
+		response += " NICK :" + params[1] + "\r\n";
+	}
+	else if (msg == QUIT)
+	{
+		if (params.size() <= 1)
+			response += " QUIT: No leaving message";
+		else
+		{
+			std::string quitMsg(&params[1].c_str()[1]);
+			response += " QUIT: ";
+			response += quitMsg;
+		}
+	}
+	else if (msg == WELCOME && c.getStatus() == REGISTER_PENDING)
+	{
+		response += " 001 " + c.getNick() + " :Welcome to ircserv !\r\n";
+	}
+	if (msg == ERROR)
+	{
+		response += " 461 ";
+		response += params[0];
+		response += " :Not enough or too much params for ";
+		response += params[0];
+		response += "\r\n";
+	}
+
+	return (response);
+}
+
+
 
 void	Server::printpfd(struct pollfd *src, int size)
 {
@@ -62,6 +109,7 @@ Server::Server(char *p, char *pd, std::string hn) : port(p)
 	psswd = std::string(pd);
 	nClientsOnline = 0;
 	hostName = hn;
+	
 	// 1 para el listener
 	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (3));
 	//commands["PASS"] = &Server::pass;
@@ -134,9 +182,7 @@ void	Server::checkClientEvents()
 				continue ;
 			}
 			this->recData[nread] = '\0';
-			//std::cout << "I am: " << y << std::endl;
 			std::cout << recData << std::endl;
-			//std::cout << clients.size() << std::endl;
 			clients[y - 1].setMsg(recData);
 			if (clients[y - 1].getRegister() == 2)
 				clients[y - 1].setPollOut(1);
@@ -145,6 +191,29 @@ void	Server::checkClientEvents()
 		{
 				pos.push_back(y);
 				continue ;
+		}
+		if (clientSock[y].revents & POLLOUT)
+		{
+			std::string response;
+			std::vector<std::string> aux = clients[y - 1].getResponses();
+			//std::cout << "vamosaver" << std::endl;
+			//std::cout << clients[y - 1].getCmd().size() << std::endl;
+			//std::map<int, std::vector<std::string> >::iterator it = clients[y - 1].getCmd().end();
+			//clients[y - 1].printCmd();
+			//for (std::vector<std::string>::iterator it = clients[y - 1].getResponses().begin(); it != clients[y - 1].getResponses().end(); it++)
+			for (size_t i = 0; i < clients[y - 1].getResponses().size(); i++)
+			{
+
+			//std::cout << "response :" << std::endl;
+			//	std::cout << response << std::endl;
+				send(clients[y - 1].getSocket(), aux[i].c_str(), aux[i].size(), 0);
+				std::cout << "charResponse: ";
+				printf("%s\n", aux[i].c_str());
+			}
+			clients[y - 1].emptyResponse();
+			//(void)it;
+				std::cout << "kaka2" << std::endl;
+			clients[y - 1].setPollOut(0);
 		}
 	}
 	std::vector<Client>::iterator y = clients.begin();
@@ -181,12 +250,13 @@ void	Server::pass(Client c) const
 	send(c.getSocket(), msg.c_str(), msg.size(), 0);
 }
 
-void	Server::launchAction(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm)
+void	Server::mark(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm)
 {
 	Command cd(c, clients, hostName, msg, psswd, cm);
 	std::cout << "pollout: " << c->getPollOut() << std::endl;
 	
 	cd.handleCmd();
+	//return (cd);
 }
 
 void	Server::handleMessages()
@@ -203,7 +273,7 @@ void	Server::handleMessages()
 			{
 				continue ;
 			}
-			this->launchAction(&(*(y)),  y->getMsg(), y->getCmd());
+			this->mark(&(*(y)),  y->getMsg(), y->getCmd());
 			y->setMsg("");
 		}
 	}
@@ -218,7 +288,9 @@ bool	Server::handleConnections()
 		for (int y = 1; y < nClientsOnline + 1; y++)
 		{
 			if (clients[y - 1].getPollOut() == 1)
+			{
 				clientSock[y].events = (POLLIN | POLLOUT);
+			}
 		}
 		if (poll(clientSock, nClientsOnline + 1, 3000) < 0)
 		{
