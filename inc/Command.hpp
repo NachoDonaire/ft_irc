@@ -15,10 +15,12 @@ class Command
  	public:
     		Command(Client *l, std::vector<Client> cl, std::string hostN, std::string ms, std::string sp, std::map<int, std::vector<std::string> > cm);
     		~Command();
+    		Command();
+		Command& operator=(const Command&);
 		int	cmdAnalyzer(std::string cmd);
 		std::vector<std::string>	split(std::string, const char *c);
-		void	launchAction(std::vector<std::string> params);
-		//void	rmParams() { params.empty();};
+		void	markAction(std::vector<std::string> params);
+		std::map<int, std::vector<std::string> >	getCmd() { return this->cmd;};
 		int	pass(std::vector<std::string> params);
 		void	cap(std::vector<std::string> params);
 		int	nick(std::vector<std::string> params);
@@ -26,9 +28,9 @@ class Command
 		void	notEnoughParams(std::vector<std::string> params);
 		void	quit(std::vector<std::string> params);
 		void	handleCmd();
-		int	welcome();
+		std::string msgGenerator(int msg, std::vector<std::string> params);
+		int	welcome(std::vector<std::string> params);
 		int	parseMsg();
-		std::string	msgGenerator(int msg, std::vector<std::string> params);
 
 };
 

@@ -31,12 +31,14 @@ class Server
 		struct pollfd	*clientSock;
 		int		serverSock;
 		std::vector<Client>	clients;
+		Command			cmd;
 		//std::map<std::string, std::function<void()> > commands;
  	public:
     		Server(char *port, char *passwd, std::string hostname);
     		Server();
     		~Server();
 		bool		handleConnections();
+		std::string	msgGenerator(int msg, std::vector<std::string> params, Client c);
 		bool		launchServer();
 		//deprecated
 		int		lookForAvailableSocket();
@@ -45,7 +47,7 @@ class Server
 		void		checkClientEvents();
 		void		handleMessages();
 		void		handleError(int status, Client c);
-		void		launchAction(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm);
+		void		mark(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm);
 		void		pass(Client c) const;
 		void		pollfdcpy(struct pollfd *src, int size);
 		void		printpfd(struct pollfd *src, int size);

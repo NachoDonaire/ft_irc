@@ -11,13 +11,31 @@
 #include <unistd.h>
 //#include <Channel.hpp>
 
+enum status {
+	ERROR = -1,
+	REGISTER_PENDING,
+	REGISTERED
+};
+
+enum command {
+	CMD_NOTFOUND,
+	NICK_OK,
+	NICK_REPEATED,
+	WELCOME,
+	QUIT,
+	CAP_LS,
+	CAP_END
+};
+
 
 class Client
 {
 	protected:
 		int	 	fd;
+		int	 	command;
 		int		off;
 		int		registered;
+		int		status;
 		bool		pollout;
 		int		id;
 		std::vector<std::string>	commands;
@@ -30,45 +48,45 @@ class Client
 		std::string	hostName;
 		std::string	nickname;
 		std::string	username;
-		//std::vector<Channel> channels;
+		//std::map<int, std::vector<std::string> >	params;
+		std::vector<std::string> responses;
  	public:
 		Client(int fd, int i, std::string sp, std::string hn);
 		void	setMsg(std::string message);
+		void	setResponse(std::string r) { this->responses.push_back(r);};
 		void	printeito();
 		void	setUser(std::string u) { this->username = u;};
 		void	setRegister(int i) { this->registered = i;};
-		void	cap(std::vector<std::string> params);
+		void	setCommand(int i) { this->command = i;};
 		void	setPsswd(std::string p);
+		void	setParams(std::map<int, std::vector<std::string> > p);
 		void	setNick(std::string n);
 		void	setOff(int n) { this->off = n;};
+		void	setStatus(int n) { this->status = n;};
 		void	setPollOut(bool n) { this->pollout = n;};
 		int	parseMsg();
 		int	getParseStatus();
+		int	getStatus() { return this->status ;};
+		int	getCommand() { return this->command ;};
 		int	getPollOut() { return this->pollout;};
 		std::map<int, std::vector<std::string> > getCmd() {return this->cmd;};
 		int	getRegister() { return this->registered; };
 		int	getOff() { return this->off;};
+		void	printCmd();
 		std::string getPsswd() { return this->psswd;};
 		std::string getMsg() { return this->msg;};
 		std::string getUser() { return this->username;};
 		int getId() { return this->id;};
-		//std::vector<std::string>	getParams() { return this->params; };
+		//std::map<int, std::vector<std::string> >	getParams() { return this->params; };
 		std::string getNick() { return this->nickname;};
 		int	getSocket() { return this->fd;};
+		void	emptyResponse() { this->responses.empty(); };
+		std::vector<std::string>	split(std::string na, const char *c);
+		std::vector<std::string>	getResponses() { return this->responses; };
     		Client();
     		~Client();
-		int	cmdAnalyzer(std::string cmd);
-		std::vector<std::string>	split(std::string, const char *c);
-		void	launchAction(std::vector<std::string> params);
-		//void	rmParams() { params.empty();};
-		int	pass(std::vector<std::string> params);
-		int	nick(std::vector<std::string> params);
-		int	user(std::vector<std::string> params);
-		void	notEnoughParams(std::vector<std::string> params);
-		void	quit(std::vector<std::string> params);
+		//void	launchAction(std::vector<std::string> params);
 		void	handleCmd();
-		int	welcome();
-		std::string	msgGenerator(int msg, std::vector<std::string> params);
 };
 
 #endif
