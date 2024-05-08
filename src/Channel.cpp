@@ -2,19 +2,21 @@
 
 Channel::Channel()
 {
-
+//Const
 }
 
-Channel::Channel(Client op, std::string t)
+Channel::Channel(const Channel& src)
 {
-	operators.push_back(op);
-	clients.push_back(op);
-	if (t == "")
-		return ;
-	topic = t;
+//Copy Const
+	*this = src;
 }
 
 Channel::~Channel()
 {
+//Dest
 }
 
+Channel& Channel::operator = (const Channel& src)
+{
+	return *this;
+}

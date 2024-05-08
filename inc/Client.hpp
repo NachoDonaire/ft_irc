@@ -18,13 +18,17 @@ enum status {
 };
 
 enum command {
+	CMD_ERROR = -1,
 	CMD_NOTFOUND,
 	NICK_OK,
 	NICK_REPEATED,
 	WELCOME,
 	QUIT,
 	CAP_LS,
-	CAP_END
+	CAP_END,
+	PRIVMSG,
+	BAD_PSSWD,
+	OK_PSSWD
 };
 
 
@@ -50,13 +54,24 @@ class Client
 		std::string	username;
 		//std::map<int, std::vector<std::string> >	params;
 		std::vector<std::string> responses;
+		std::vector<int>	 cmds;
+
+		/* Channel
+		std::vector<std::string		channels;
+		*/
+		
  	public:
+		/* Channel
+			join(id del canal a insertar)
+			kick(canal a eliminar)
+		*/
 		Client(int fd, int i, std::string sp, std::string hn);
 		void	setMsg(std::string message);
 		void	setResponse(std::string r) { this->responses.push_back(r);};
 		void	printeito();
 		void	setUser(std::string u) { this->username = u;};
 		void	setRegister(int i) { this->registered = i;};
+		void	setNCmd(int i) { this->cmds.push_back(i);};
 		void	setCommand(int i) { this->command = i;};
 		void	setPsswd(std::string p);
 		void	setParams(std::map<int, std::vector<std::string> > p);
@@ -81,13 +96,17 @@ class Client
 		std::string getNick() { return this->nickname;};
 		int	getSocket() { return this->fd;};
 		std::vector<std::string> getCommands() { return this->commands;};
-		void	emptyResponse() { this->responses.empty(); };
+		void	emptyResponse() { this->responses.clear(); };
+		void	emptyCmd() { this->cmd.clear(); };
+		void	emptyNCmd() { this->cmds.clear(); };
 		std::vector<std::string>	split(std::string na, const char *c);
 		std::vector<std::string>	getResponses() { return this->responses; };
+		std::vector<int>	getNCmd() { return this->cmds; };
     		Client();
     		~Client();
 		//void	launchAction(std::vector<std::string> params);
 		void	handleCmd();
+		Client* operator=(const Client* f);
 };
 
 #endif

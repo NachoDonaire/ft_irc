@@ -1,18 +1,32 @@
-#ifndef CHANNEL_HPP
-#define CHANNEL_HPP
-
-#include <Client.hpp>
+#ifndef CHANNEL_H
+#define CHANNEL_H
+#include <iostream>
+#include <string>
 
 class Channel
 {
-	private:
-		std::vector<Client> clients;
-		std::vector<Client> operators;
-		std::string	topic;
- 	public:
-    		Channel();
-    		Channel(Client op);
-    		~Channel();
+public:
+	Channel();
+	~Channel();
+   Channel(const Channel& src);
+   Channel& operator=(const Channel& src);
+	//joinClient
+	//deleteClient
+	//kick
+	//invite
+	//changeTopic
+	//changeInviteMode
+	//changePassword
+private:
+	//vector de usuarios del canal
+	//vector de admin users
+	//std::string topic
+	//std::string idName
+	//std::string password
+	//vector de idUsers blacklist
+	//vector de idUsers whitelist
+	//bool invite
+	//int maxUsers;
 };
 
-#endif
+#endif     //CHANNEL_H

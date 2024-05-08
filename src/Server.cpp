@@ -5,52 +5,6 @@ Server::Server()
 {
 }
 
-std::string	Server::msgGenerator(int msg, std::vector<std::string> params, Client c)
-{
-	std::string response(hostName);
-
-	std::cout << c.getStatus() << std::endl;
-	if (msg == CMD_NOTFOUND)
-	{
-		response += " 421 " + params[0] + " :Unknown command\r\n";
-	}
-	else if (msg == NICK_OK)
-	{
-		response += " 381 " + c.getNick() + " : Capabilities displayed properly !\r\n";
-	}
-	else if (msg == NICK_REPEATED)
-	{
-		response += " NICK :" + params[1] + "\r\n";
-	}
-	else if (msg == QUIT)
-	{
-		if (params.size() <= 1)
-			response += " QUIT: No leaving message";
-		else
-		{
-			std::string quitMsg(&params[1].c_str()[1]);
-			response += " QUIT: ";
-			response += quitMsg;
-		}
-	}
-	else if (msg == WELCOME && c.getStatus() == REGISTER_PENDING)
-	{
-		response += " 001 " + c.getNick() + " :Welcome to ircserv !\r\n";
-	}
-	if (msg == ERROR)
-	{
-		response += " 461 ";
-		response += params[0];
-		response += " :Not enough or too much params for ";
-		response += params[0];
-		response += "\r\n";
-	}
-
-	return (response);
-}
-
-
-
 void	Server::printpfd(struct pollfd *src, int size)
 {
 	int	i = 0;
@@ -61,20 +15,6 @@ void	Server::printpfd(struct pollfd *src, int size)
 	}
 }
 
-
-
-void	Server::pollfdcpy(struct pollfd *src, int size)
-{
-	int	i = 0;
-	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (size));
-	while (i < size)
-	{
-		clientSock[i].fd = src[i].fd;
-		clientSock[i].events = src[i].events;
-		clientSock[i].revents = src[i].revents;
-		i++;
-	}
-}
 
 int	Server::reallocPollFd(int index)
 {
@@ -161,7 +101,7 @@ void	Server::establishConnection()
 	std::cout << nClientsOnline << std::endl;
 	clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
 	clientSock[nClientsOnline].events = (POLLIN); 
-	clients.push_back(Client(clientSock[nClientsOnline].fd, nClientsOnline, psswd, hostName));
+	clients.push_back(new Client(clientSock[nClientsOnline].fd, nClientsOnline, psswd, hostName));
 }
 
 void	Server::checkClientEvents()
@@ -183,9 +123,9 @@ void	Server::checkClientEvents()
 			}
 			this->recData[nread] = '\0';
 			std::cout << recData << std::endl;
-			clients[y - 1].setMsg(recData);
-			if (clients[y - 1].getRegister() == 2)
-				clients[y - 1].setPollOut(1);
+			clients[y - 1]->setMsg(recData);
+			if (clients[y - 1]->getRegister() == 2)
+				clients[y - 1]->setPollOut(1);
 		}
 		if (clientSock[y].revents & (POLLHUP | POLLERR | POLLNVAL))
 		{
@@ -195,51 +135,32 @@ void	Server::checkClientEvents()
 		if (clientSock[y].revents & POLLOUT)
 		{
 			std::string response;
-			std::vector<std::string> aux = clients[y - 1].getResponses();
-			//std::cout << "vamosaver" << std::endl;
-			//std::cout << clients[y - 1].getCmd().size() << std::endl;
-			//std::map<int, std::vector<std::string> >::iterator it = clients[y - 1].getCmd().end();
-			//clients[y - 1].printCmd();
-			//for (std::vector<std::string>::iterator it = clients[y - 1].getResponses().begin(); it != clients[y - 1].getResponses().end(); it++)
-			for (size_t i = 0; i < clients[y - 1].getResponses().size(); i++)
+			std::vector<std::string> aux = clients[y - 1]->getResponses();
+			std::vector<int> NCmd = clients[y - 1]->getNCmd();
+			//std::cout << "size of both : " << aux.size() << NCmd.size() << std::endl;
+			for (size_t i = 0; i < clients[y - 1]->getResponses().size(); i++)
 			{
-
-			//std::cout << "response :" << std::endl;
-			//	std::cout << response << std::endl;
-				send(clients[y - 1].getSocket(), aux[i].c_str(), aux[i].size(), 0);
-				std::cout << "charResponse: ";
-				printf("%s\n", aux[i].c_str());
+				send(clients[y - 1]->getSocket(), aux[i].c_str(), aux[i].size(), 0);
+				std::cout << aux[i] << std::endl;
+				if (NCmd[i] == BAD_PSSWD || NCmd[i] == QUIT)
+				{
+					//std::cout << "ave" << std::endl;
+					pos.push_back(y);
+				}
 			}
-			clients[y - 1].emptyResponse();
-			//(void)it;
-				std::cout << "kaka2" << std::endl;
-			clients[y - 1].setPollOut(0);
+			clients[y - 1]->emptyResponse();
+			clients[y - 1]->emptyNCmd();
+			clients[y - 1]->setPollOut(0);
 		}
 	}
-	std::vector<Client>::iterator y = clients.begin();
+	std::vector<Client *>::iterator y = clients.begin();
 	for (std::vector<int>::iterator it = pos.begin(); it != pos.end(); it++)
 	{
-				//std::cout << "aqui2" << std::endl;
 		close(clientSock[*it].fd);
 		clients.erase(y + (*it - 1));
 		nClientsOnline = reallocPollFd(*it);
 	}
 
-}
-
-void	Server::handleError(int status, Client c)
-{
-	if (status == 1)
-	{
-		std::cerr << "Not valid command from " << c.getId() << std::endl;
-	}
-	else if (status == 2)
-	{
-		//std::cerr << "Not valid psswd" << std::endl;
-		std::string msgerr("Not valid password");
-		send(c.getSocket(), msgerr.c_str(), msgerr.size(), 0);
-		close(c.getSocket());
-	}
 }
 
 void	Server::pass(Client c) const
@@ -253,7 +174,7 @@ void	Server::pass(Client c) const
 void	Server::mark(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm)
 {
 	Command cd(c, clients, hostName, msg, psswd, cm);
-	std::cout << "pollout: " << c->getPollOut() << std::endl;
+	//std::cout << "pollout: " << c->getPollOut() << std::endl;
 	
 	cd.handleCmd();
 	//return (cd);
@@ -261,20 +182,21 @@ void	Server::mark(Client *c, std::string msg, std::map<int, std::vector<std::str
 
 void	Server::handleMessages()
 {
-	std::vector<Client>::iterator y;
+	std::vector<Client *>::iterator y;
 	int							parseStatus;
 
 	for (y = clients.begin(); y != clients.end(); y++)
 	{
-		if (y->getMsg() != "")
+		if ((*y)->getMsg() != "")
 		{
-			parseStatus = y->parseMsg();
+			parseStatus = (*y)->parseMsg();
 			if (parseStatus != 0)
 			{
 				continue ;
 			}
-			this->mark(&(*(y)),  y->getMsg(), y->getCmd());
-			y->setMsg("");
+			this->mark((*(y)),  (*y)->getMsg(), (*y)->getCmd());
+			(*y)->emptyCmd();
+			(*y)->setMsg("");
 		}
 	}
 }
@@ -287,7 +209,7 @@ bool	Server::handleConnections()
 	{
 		for (int y = 1; y < nClientsOnline + 1; y++)
 		{
-			if (clients[y - 1].getPollOut() == 1)
+			if (clients[y - 1]->getPollOut() == 1)
 			{
 				clientSock[y].events = (POLLIN | POLLOUT);
 			}
@@ -305,7 +227,7 @@ bool	Server::handleConnections()
 		handleMessages(); // MARCAMOS FLAG POLLOUT
 		for (int y = 1; y < nClientsOnline + 1; y++)
 		{
-			if (clients[y - 1].getPollOut() == 0)
+			if (clients[y - 1]->getPollOut() == 0)
 				clientSock[y].events = (POLLIN);
 		}
 	
@@ -315,22 +237,9 @@ bool	Server::handleConnections()
 	return 0;
 }
 
-int Server::lookForAvailableSocket()
-{
-	for (int i = 1; i < 6; i++)
-	{
-		if (this->clientSock[i].fd == -1)
-			return i;
-	}
-	return -1;
-}
-
-
-
-
-
 Server::~Server()
 {
+	std::cout << "alo" << std::endl;
 }
 
 

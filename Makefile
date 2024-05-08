@@ -2,6 +2,8 @@ SRCS = main.cpp	\
        Server.cpp \
        Client.cpp \
        Command.cpp
+#       Channel.cpp \
+
 SRDIR = src/
 NAME = ircserv
 DSRC = $(addprefix $(SRDIR), $(SRCS))
@@ -14,7 +16,6 @@ all: $(NAME)
 
 $(NAME) : $(OBJS)
 	$(CXX) -o $(NAME) $(OBJS)
-
 clean:
 	$(RM) $(OBJS)
 
