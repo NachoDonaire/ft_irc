@@ -78,6 +78,29 @@ std::vector<std::string> Client::split(std::string na, const char *c)
 	return tokens;
 }
 
+Client* Client::operator=(const Client* f)
+{
+	fd = f->fd;
+	servPsswd = f->servPsswd;
+	hostName = f->hostName;
+	off = f->off;
+	registered = f->registered;
+	status = f->status;
+	pollout = f->pollout;
+	id = f->id;
+	commands = f->commands;
+	parseStatus = f->parseStatus;
+	msg = f->msg;
+	cmd = f->cmd;
+	psswd = f->psswd;
+	nickname = f->nickname;
+	username = f->username;
+	responses =  f->responses;
+	cmds = f->cmds;
+	return this;
+}
+
+
 
 void	Client::setNick(std::string n)
 {
@@ -112,8 +135,13 @@ int Client::parseMsg()
 	{
 	
 		parameters = split(tokens[i], " ");
+		if (parameters[0] == "NICK")
+		{
+			std::cout << "EEO" << std::endl;
+			std::cout << msg << std::endl;
+		}
 		cmd[i] = parameters;
-		parameters.empty();
+		parameters.clear();
 	}
 	//printCmd();
 	return (0);

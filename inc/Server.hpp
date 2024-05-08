@@ -25,14 +25,12 @@ class Server
 		std::string	psswd;
 		std::string	hostName;
 		int		nClientsOnline;
-		//harcodeo del tamaño del mensaje recibido
 		char 		recData[512];
 		struct addrinfo	*rp;
 		struct pollfd	*clientSock;
 		int		serverSock;
-		std::vector<Client>	clients;
+		std::vector<Client *>	clients;
 		Command			cmd;
-		//std::map<std::string, std::function<void()> > commands;
  	public:
     		Server(char *port, char *passwd, std::string hostname);
     		Server();
@@ -40,8 +38,6 @@ class Server
 		bool		handleConnections();
 		std::string	msgGenerator(int msg, std::vector<std::string> params, Client c);
 		bool		launchServer();
-		//deprecated
-		int		lookForAvailableSocket();
 		int		reallocPollFd(int index);
 		void		establishConnection();
 		void		checkClientEvents();
