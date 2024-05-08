@@ -63,8 +63,14 @@ std::string	Command::msgGenerator(int msg, std::vector<std::string> params)
 	}
 	else if (msg == PRIVMSG)
 	{
-		response += " ";
-		response += params[2];
+		////////std::cout << "weepa" << std::endl;
+		std::cout << launcher->getNick() << std::endl;
+		response += " 401 " + launcher->getNick() +  " ";
+		for (size_t  i = 2; i < params.size(); i++)
+		{
+			response += params[i];
+			response += " ";
+		}
 		response += "\r\n";
 	}
 	//std::cout << "cmdResponse: " << response << std::endl;
@@ -388,8 +394,10 @@ void	Command::privmsg(std::vector<std::string> params)
 	std::vector<std::string>	dest;
 	std::string			response;
 
-	if (params.size() != 3)
+	//"PRIVMSG" "tucson,jossie,esmeraldo" "hola!!!!!" "iuui"
+	if (params.size() < 3)
 	{
+		//caso de error
 		launcher->setCommand(CMD_ERROR);
 		response = msgGenerator(launcher->getCommand(), params);
 		launcher->setResponse(response);
@@ -397,6 +405,7 @@ void	Command::privmsg(std::vector<std::string> params)
 		launcher->setPollOut(1);
 		return ;
 	}
+	//caso respuesta valida
 	dest = split(params[1], ",");
 	markPollOut(clients, dest, params);
 	std::cout << "gepasa" << std::endl;
