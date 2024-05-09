@@ -1,15 +1,7 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
-#include <string>
-#include <vector>
-#include <map>
-#include <cstring>
-#include <iostream>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-//#include <Channel.hpp>
+#include <Ircsrv.hpp>
 
 enum status {
 	ERROR = -1,

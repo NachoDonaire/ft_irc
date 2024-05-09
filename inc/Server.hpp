@@ -1,21 +1,9 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <sys/types.h>
-#include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <iostream>
-#include <vector>
-#include <map>
-#include <poll.h>
-#include <stdlib.h>
-#include <Client.hpp>
+#include <Ircsrv.hpp>
 #include <Command.hpp>
+#include <Channel.hpp>
 
 
 class Server
