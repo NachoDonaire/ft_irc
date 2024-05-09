@@ -28,11 +28,12 @@ class Command
 		void	notEnoughParams(std::vector<std::string> params);
 		void	quit(std::vector<std::string> params);
 		void	handleCmd();
-		std::string msgGenerator(int msg, std::vector<std::string> params);
+		std::string responseGenerator(int msg, std::vector<std::string> params);
 		int	welcome(std::vector<std::string> params);
 		int	parseMsg();
 		void	privmsg(std::vector<std::string> params);
 		void	markie(Client *c, std::vector<std::string> params);
+		void	markEverything(int cmd, std::vector<std::string> params);
 		void	markPollOut(std::vector<Client *> clients, std::vector<std::string> dest, std::vector<std::string> params);
 
 };

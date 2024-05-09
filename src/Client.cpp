@@ -48,6 +48,7 @@ Client::Client()
 
 Client::~Client()
 {
+	std::cout << "Cliente deleteado" << std::endl;
 }
 
 std::vector<std::string> Client::split(std::string na, const char *c)

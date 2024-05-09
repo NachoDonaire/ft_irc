@@ -102,6 +102,7 @@ void	Server::establishConnection()
 	clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
 	clientSock[nClientsOnline].events = (POLLIN); 
 	clients.push_back(new Client(clientSock[nClientsOnline].fd, nClientsOnline, psswd, hostName));
+	std::cout << "Brand new Cadillac" << std::endl;
 }
 
 void	Server::checkClientEvents()
@@ -111,7 +112,7 @@ void	Server::checkClientEvents()
 	
 	for (int y = 1; y < nClientsOnline + 1; y++)
 	{
-		std::cout << "revents: " << clientSock[y].revents << std::endl;
+		std::cout << "revents " << clients[y - 1]->getSocket() << " : " << clientSock[y].revents << std::endl;
 		if (clientSock[y].revents & POLLIN)
 		{
 			int nread = recv(clientSock[y].fd, this->recData, 512, 0);

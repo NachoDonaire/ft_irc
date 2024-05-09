@@ -28,6 +28,7 @@ enum command {
 	CAP_END,
 	PRIVMSG,
 	BAD_PSSWD,
+	USER,
 	OK_PSSWD
 };
 
