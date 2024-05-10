@@ -13,8 +13,6 @@ RM = rm -rf
 
 all: $(NAME)
 
-##$(OBJS) : $(ALLC)
-##	$(CC) $(CFLAGS) -c $< -o $@
 $(NAME) : $(OBJS)
 	$(CXX) $(CPPFLAGS) -o $(NAME) $(OBJS)
 
