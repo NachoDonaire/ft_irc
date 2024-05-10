@@ -1,21 +1,21 @@
 SRCS = main.cpp	\
        Server.cpp \
        Client.cpp \
+       Channel.cpp \
        Command.cpp
+
 SRDIR = src/
 NAME = ircserv
 DSRC = $(addprefix $(SRDIR), $(SRCS))
 ALLC = $(DSRC)
 OBJS = $(DSRC:.cpp=.o)
-CXX = c++
-CPPFLAGS = -Wall -Wextra -Werror -Iinc -std=c++98
+CXX = c++ -Wall -Werror -std=c++98 -I inc
 RM = rm -rf
 
 all: $(NAME)
 
 $(NAME) : $(OBJS)
-	$(CXX) $(CPPFLAGS) -o $(NAME) $(OBJS)
-
+	$(CXX) -o $(NAME) $(OBJS)
 clean:
 	$(RM) $(OBJS)
 

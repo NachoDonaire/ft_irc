@@ -2,6 +2,7 @@
 #define COMMAND_HPP
 
 #include <Client.hpp>
+#include <Ircsrv.hpp>
 
 class Command
 {

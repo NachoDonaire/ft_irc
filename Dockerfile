@@ -1,28 +1,12 @@
-# Use a base image with your desired Linux distribution
-FROM debian:bullseye
+# Use an official Ubuntu as a parent image
+FROM ubuntu:latest
 
-# Set environment variables for WeeChat
-ENV WEECHAT_HOME /weechat
+# Update the package lists
+RUN apt-get update
 
-# Install WeeChat
-RUN apt-get update && apt-get install -y weechat && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install HexChat
+RUN apt-get install -y hexchat
 
-# Expose WeeChat port (should be equal to the port used by the IRC SERVER)
-# EXPOSE 8888
+# Set the default command to run when the container starts
+CMD ["hexchat"]
 
-# Set up a non-root user to run WeeChat
-RUN groupadd -r weechat && useradd -r -g weechat -d $WEECHAT_HOME -s /sbin/nologin -c "WeeChat user" weechat && \
-    mkdir -p $WEECHAT_HOME && chown -R weechat:weechat $WEECHAT_HOME
-
-# Set the working directory
-WORKDIR $WEECHAT_HOME
-
-# Switch to the non-root user
-USER weechat
-
-# Run WeeChat
-CMD ["weechat"]
-# Run Weechat in the port 8888
-#CMD ["weechat", "--config", "irc.server.default.addresses=localhost/8888"]

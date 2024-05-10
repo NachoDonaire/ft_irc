@@ -1,15 +1,7 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
-#include <string>
-#include <vector>
-#include <map>
-#include <cstring>
-#include <iostream>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-//#include <Channel.hpp>
+#include <Ircsrv.hpp>
 
 enum status {
 	ERROR = -1,
@@ -56,7 +48,16 @@ class Client
 		//std::map<int, std::vector<std::string> >	params;
 		std::vector<std::string> responses;
 		std::vector<int>	 cmds;
+
+		/* Channel
+		std::vector<std::string		channels;
+		*/
+		
  	public:
+		/* Channel
+			join(id del canal a insertar)
+			kick(canal a eliminar)
+		*/
 		Client(int fd, int i, std::string sp, std::string hn);
 		void	setMsg(std::string message);
 		void	setResponse(std::string r) { this->responses.push_back(r);};
@@ -87,6 +88,7 @@ class Client
 		//std::map<int, std::vector<std::string> >	getParams() { return this->params; };
 		std::string getNick() { return this->nickname;};
 		int	getSocket() { return this->fd;};
+		std::vector<std::string> getCommands() { return this->commands;};
 		void	emptyResponse() { this->responses.clear(); };
 		void	emptyCmd() { this->cmd.clear(); };
 		void	emptyNCmd() { this->cmds.clear(); };
