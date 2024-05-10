@@ -12,12 +12,12 @@ class Server
 		char		*port;
 		std::string	psswd;
 		std::string	hostName;
-		int		nClientsOnline;
+		int		currentSize;
 		char 		recData[512];
 		struct addrinfo	*rp;
 		struct pollfd	*clientSock;
 		int		serverSock;
-		std::vector<Client *>	clients;
+		std::vector<Client>	clients;
 		Command			cmd;
 		/* Channel
 		std::map<std::string, Channel> channels;
@@ -33,6 +33,7 @@ class Server
 		bool		handleConnections();
 		std::string	msgGenerator(int msg, std::vector<std::string> params, Client c);
 		bool		launchServer();
+		int		pollfdLen();
 		int		reallocPollFd(int index);
 		void		establishConnection();
 		void		checkClientEvents();
@@ -42,6 +43,7 @@ class Server
 		void		pass(Client c) const;
 		void		pollfdcpy(struct pollfd *src, int size);
 		void		printpfd(struct pollfd *src, int size);
+		std::vector<Client>		*getClients() { return &this->clients; };
 
 };
 

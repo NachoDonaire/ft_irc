@@ -8,13 +8,13 @@ class Command
 {
 	private:
 		std::string					hostName;
-		std::vector<Client *>				clients;
+		std::vector<Client >				*clients;
 		std::string					msg;
 		std::string					servPsswd;
 		std::map<int, std::vector<std::string> >	cmd;
 		Client						*launcher;
  	public:
-    		Command(Client *l, std::vector<Client *> cl, std::string hostN, std::string ms, std::string sp, std::map<int, std::vector<std::string> > cm);
+    		Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp, std::map<int, std::vector<std::string> > cm);
     		~Command();
     		Command();
 		Command& operator=(const Command&);
@@ -32,10 +32,11 @@ class Command
 		std::string responseGenerator(int msg, std::vector<std::string> params);
 		int	welcome(std::vector<std::string> params);
 		int	parseMsg();
+		void	printShait();
 		void	privmsg(std::vector<std::string> params);
 		void	markie(Client *c, std::vector<std::string> params);
 		void	markEverything(int cmd, std::vector<std::string> params);
-		void	markPollOut(std::vector<Client *> clients, std::vector<std::string> dest, std::vector<std::string> params);
+		void	markPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
 
 };
 

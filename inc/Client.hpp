@@ -92,6 +92,7 @@ class Client
 		void	emptyResponse() { this->responses.clear(); };
 		void	emptyCmd() { this->cmd.clear(); };
 		void	emptyNCmd() { this->cmds.clear(); };
+		void	printShait() ;
 		std::vector<std::string>	split(std::string na, const char *c);
 		std::vector<std::string>	getResponses() { return this->responses; };
 		std::vector<int>	getNCmd() { return this->cmds; };

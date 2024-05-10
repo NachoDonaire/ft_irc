@@ -42,6 +42,22 @@ void	Client::setParams(std::map<int, std::vector<std::string> > p)
 }
 */
 
+void	Client::printShait()
+{
+	std::cout << "responses : " << std::endl;
+	for (size_t i = 0; i < responses.size(); i++)
+	{
+		std::cout << responses.at(i) << std::endl;
+	}
+	std::cout << "cmd : " << std::endl;
+	for (std::map<int, std::vector<std::string> >::iterator it = cmd.begin(); it != cmd.end(); it++)
+	{
+		std::cout << "this is client cmd second vector" << std::endl;
+		for (size_t i = 0; i < it->second.size() ; i++)
+			std::cout << it->second.at(i) << std::endl;
+	}
+}
+
 Client::Client()
 {
 }
@@ -49,7 +65,7 @@ Client::Client()
 
 Client::~Client()
 {
-	std::cout << "Cliente deleteado" << std::endl;
+	//std::cout << "Cliente deleteado" << std::endl;
 }
 
 std::vector<std::string> Client::split(std::string na, const char *c)
@@ -90,7 +106,6 @@ Client* Client::operator=(const Client* f)
 	status = f->status;
 	pollout = f->pollout;
 	id = f->id;
-	commands = f->commands;
 	parseStatus = f->parseStatus;
 	msg = f->msg;
 	cmd = f->cmd;
@@ -137,11 +152,11 @@ int Client::parseMsg()
 	{
 	
 		parameters = split(tokens[i], " ");
-		if (parameters[0] == "NICK")
+		/*if (parameters[0] == "NICK")
 		{
-			std::cout << "EEO" << std::endl;
+			//std::cout << "EEO" << std::endl;
 			std::cout << msg << std::endl;
-		}
+		}*/
 		cmd[i] = parameters;
 		parameters.clear();
 	}

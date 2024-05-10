@@ -1,8 +1,19 @@
 #include <Server.hpp>
 #include <stdio.h>
 
+#define POLLFD_LIMIT -7
+
 Server::Server()
 {
+}
+
+int	Server::pollfdLen()
+{
+	int	i = 0;
+
+	while (this->clientSock[i].fd != POLLFD_LIMIT)
+		i++;
+	return (i);
 }
 
 void	Server::printpfd(struct pollfd *src, int size)
@@ -18,40 +29,44 @@ void	Server::printpfd(struct pollfd *src, int size)
 
 int	Server::reallocPollFd(int index)
 {
-	int	size = index < 0 ? nClientsOnline + 2 : nClientsOnline;
-	int	nClients = index < 0 ? nClientsOnline + 1 : nClientsOnline - 1;
+	int	size = index < 0 ? currentSize + 1 : currentSize - 1;
 	struct pollfd neopfd[size];
 	int	i;
 	int	y;
 
 	i = 0;
 	y = 0;
-	while (i < nClientsOnline + 1)
+	while (i < currentSize)
 	{
 		if (i == index)
 		{
 			i++;
-			continue ;
+			continue;
 		}
 		neopfd[y].fd = clientSock[i].fd;
 		neopfd[y].events = clientSock[i].events;
 		neopfd[y++].revents = clientSock[i++].revents;
 	}
 	free(clientSock);
-	this->clientSock = (struct pollfd *)malloc(sizeof(struct pollfd) * (size));
-	memcpy(clientSock, neopfd, sizeof(struct pollfd) * size);
+	this->clientSock = (struct pollfd *)malloc(sizeof(struct pollfd) * (size + 1));
+	memcpy(clientSock, neopfd, sizeof(struct pollfd) * (size + 1));
+	this->clientSock[size].fd = POLLFD_LIMIT;
+	currentSize = pollfdLen();
 	//pollfdcpy(neopfd, size);
-	return nClients;
+	return size;
 }
 
 Server::Server(char *p, char *pd, std::string hn) : port(p)
 {
 	psswd = std::string(pd);
-	nClientsOnline = 0;
 	hostName = hn;
 	
 	// 1 para el listener
-	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (3));
+	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (2));
+	this->clientSock[1].fd = -7;
+	currentSize = pollfdLen();
+	//std::cout << "CURRENT SIZE AT CONSTRUCTOR" << currentSize <<std::endl;
+	//clients.push_back(Client(clientSock[currentSize].fd, currentSize, psswd, hostName));
 	//commands["PASS"] = &Server::pass;
 }	
 
@@ -96,13 +111,20 @@ bool	Server::launchServer()
 void	Server::establishConnection()
 {
 	std::cout << "Someones connecting" << std::endl;
-	nClientsOnline = reallocPollFd(-1);
-	//nClientsOnline++;
-	std::cout << nClientsOnline << std::endl;
-	clientSock[nClientsOnline].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
-	clientSock[nClientsOnline].events = (POLLIN); 
-	clients.push_back(new Client(clientSock[nClientsOnline].fd, nClientsOnline, psswd, hostName));
-	std::cout << "Brand new Cadillac" << std::endl;
+	currentSize = reallocPollFd(-1);
+	//currentSize++;
+	std::cout << currentSize - 1 << std::endl;
+	clientSock[currentSize - 1].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
+	if (clientSock[currentSize - 1].fd < 0)
+	{
+		currentSize = reallocPollFd(currentSize);
+	}
+	else
+	{
+		clientSock[currentSize - 1].events = (POLLIN); 
+		clients.push_back(Client(clientSock[currentSize - 1].fd, currentSize, psswd, hostName));
+	}
+	//std::cout << "Brand new Cadillac" << std::endl;
 }
 
 void	Server::checkClientEvents()
@@ -110,23 +132,23 @@ void	Server::checkClientEvents()
 	std::vector<int>	pos;
 	//std::cout << "alakazo" << std::endl;
 	
-	for (int y = 1; y < nClientsOnline + 1; y++)
+	for (int y = 1; y < currentSize; y++)
 	{
-		std::cout << "revents " << clients[y - 1]->getSocket() << " : " << clientSock[y].revents << std::endl;
+		//std::cout << "revents " << clients[y - 1].getSocket() << " : " << clientSock[y].revents << std::endl;
 		if (clientSock[y].revents & POLLIN)
 		{
 			int nread = recv(clientSock[y].fd, this->recData, 512, 0);
 			if (nread <= 0)
 			{
-				std::cout << "aqui1" << std::endl;
+				//std::cout << "aqui1" << std::endl;
 				pos.push_back(y);
 				continue ;
 			}
 			this->recData[nread] = '\0';
-			std::cout << recData << std::endl;
-			clients[y - 1]->setMsg(recData);
-			if (clients[y - 1]->getRegister() == 2)
-				clients[y - 1]->setPollOut(1);
+			//std::cout << recData << std::endl;
+			clients[y - 1].setMsg(recData);
+			if (clients[y - 1].getRegister() == 2)
+				clients[y - 1].setPollOut(1);
 		}
 		if (clientSock[y].revents & (POLLHUP | POLLERR | POLLNVAL))
 		{
@@ -136,30 +158,30 @@ void	Server::checkClientEvents()
 		if (clientSock[y].revents & POLLOUT)
 		{
 			std::string response;
-			std::vector<std::string> aux = clients[y - 1]->getResponses();
-			std::vector<int> NCmd = clients[y - 1]->getNCmd();
+			std::vector<std::string> aux = clients[y - 1].getResponses();
+			std::vector<int> NCmd = clients[y - 1].getNCmd();
 			//std::cout << "size of both : " << aux.size() << NCmd.size() << std::endl;
-			for (size_t i = 0; i < clients[y - 1]->getResponses().size(); i++)
+			for (size_t i = 0; i < clients[y - 1].getResponses().size(); i++)
 			{
-				send(clients[y - 1]->getSocket(), aux[i].c_str(), aux[i].size(), 0);
-				std::cout << aux[i] << std::endl;
+				send(clients[y - 1].getSocket(), aux[i].c_str(), aux[i].size(), 0);
+				//std::cout << aux[i] << std::endl;
 				if (NCmd[i] == BAD_PSSWD || NCmd[i] == QUIT)
 				{
 					//std::cout << "ave" << std::endl;
 					pos.push_back(y);
 				}
 			}
-			clients[y - 1]->emptyResponse();
-			clients[y - 1]->emptyNCmd();
-			clients[y - 1]->setPollOut(0);
+			clients[y - 1].emptyResponse();
+			clients[y - 1].emptyNCmd();
+			clients[y - 1].setPollOut(0);
 		}
 	}
-	std::vector<Client *>::iterator y = clients.begin();
+	std::vector<Client>::iterator y = clients.begin();
 	for (std::vector<int>::iterator it = pos.begin(); it != pos.end(); it++)
 	{
 		close(clientSock[*it].fd);
+		currentSize = reallocPollFd(*it);
 		clients.erase(y + (*it - 1));
-		nClientsOnline = reallocPollFd(*it);
 	}
 
 }
@@ -174,30 +196,30 @@ void	Server::pass(Client c) const
 
 void	Server::mark(Client *c, std::string msg, std::map<int, std::vector<std::string> > cm)
 {
-	Command cd(c, clients, hostName, msg, psswd, cm);
-	//std::cout << "pollout: " << c->getPollOut() << std::endl;
+	Command cd(c, this->getClients(), hostName, msg, psswd, cm);
 	
+
 	cd.handleCmd();
-	//return (cd);
+	//cd.printShait();
 }
 
 void	Server::handleMessages()
 {
-	std::vector<Client *>::iterator y;
+	std::vector<Client>::iterator y;
 	int							parseStatus;
 
 	for (y = clients.begin(); y != clients.end(); y++)
 	{
-		if ((*y)->getMsg() != "")
+		if ((*y).getMsg() != "")
 		{
-			parseStatus = (*y)->parseMsg();
+			parseStatus = (*y).parseMsg();
 			if (parseStatus != 0)
 			{
 				continue ;
 			}
-			this->mark((*(y)),  (*y)->getMsg(), (*y)->getCmd());
-			(*y)->emptyCmd();
-			(*y)->setMsg("");
+			this->mark(&(*(y)),  (*y).getMsg(), (*y).getCmd());
+			(*y).emptyCmd();
+			(*y).setMsg("");
 		}
 	}
 }
@@ -208,27 +230,31 @@ bool	Server::handleConnections()
 {
 	while (1)
 	{
-		for (int y = 1; y < nClientsOnline + 1; y++)
+		for (int y = 1; y < currentSize; y++)
 		{
-			if (clients[y - 1]->getPollOut() == 1)
+			if (clients[y - 1].getPollOut() == 1)
 			{
 				clientSock[y].events = (POLLIN | POLLOUT);
 			}
 		}
-		if (poll(clientSock, nClientsOnline + 1, 3000) < 0)
+		if (poll(clientSock, currentSize, 3000) < 0)
 		{
 			std::cerr << "poll() error" << std::endl;
 			return 1;
 		}
+		//std::cout << "ave1" << std::endl;
 		if (clientSock[0].revents & POLLIN)
 		{
 			establishConnection();
 		}
+		//std::cout << "ave2" << std::endl;
 		checkClientEvents(); // QUTAMOS POLLOUT EVENTS
+		//std::cout << "ave3" << std::endl;
 		handleMessages(); // MARCAMOS FLAG POLLOUT
-		for (int y = 1; y < nClientsOnline + 1; y++)
+		//std::cout << "ave4" << std::endl;
+		for (int y = 1; y < currentSize; y++)
 		{
-			if (clients[y - 1]->getPollOut() == 0)
+			if (clients[y - 1].getPollOut() == 0)
 				clientSock[y].events = (POLLIN);
 		}
 	

@@ -3,19 +3,50 @@
 Command::Command()
 {}
 
-Command::Command(Client *l, std::vector<Client *> cl, std::string hostN, std::string ms, std::string sp, std::map<int, std::vector<std::string> > cm) : msg(ms)
+Command::Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp, std::map<int, std::vector<std::string> > cm) : msg(ms)
 {
 
-	for (size_t i = 0; i < cl.size(); i++)
+	/*for (size_t i = 0; i < cl->size(); i++)
 	{
-		clients.push_back(cl[i]);
-	}
+		clients->push_back(cl[i]);
+	}*/
+	msg = ms;
+	this->parseMsg();
+	clients = cl;
 	servPsswd = sp;
 	hostName = hostN;
 	launcher = l;
-	cmd = cm;
+	//cmd = cm;
 	//launcher->setParams(cm);
 }
+
+void	Command::printShait()
+{
+	std::cout << "-------------------" << std::endl;
+	std::cout << hostName << std::endl;
+	std::cout << "msg : " << msg << std::endl;
+	std::cout << servPsswd << std::endl;
+	std::cout << "Commands : " << std::endl;
+	for (std::map<int, std::vector<std::string> >::iterator it = cmd.begin(); it != cmd.end(); it++)
+	{
+		std::cout << "this is command cmd : " << std::endl;
+		for (size_t i = 0; i < it->second.size() ; i++)
+		{
+			std::cout << it->second.at(i) << std::endl;
+		}
+	}
+	std::cout << "############" << std::endl;
+	std::cout << "launcher : " << std::endl;
+	launcher->printShait();
+	std::cout << "############" << std::endl;
+	/*for (size_t i = 0; i < clients->size(); i++)
+	{
+		clients->at(i).printShait();
+	}*/
+	std::cout << "-------------------" << std::endl;
+}
+
+	
 
 std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 {
@@ -36,7 +67,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 	}
 	else if (msg == NICK_REPEATED)
 	{
-		response += " 433 * " + params[1] + ":Nickname is already in use.\r\n";
+		response += " 433 * " + params[1] + " :Nickname is already in use.\r\n";
 	}
 	else if (msg == QUIT)
 	{
@@ -67,8 +98,8 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 	}
 	else if (msg == PRIVMSG)
 	{
-		std::cout << "weepa" << std::endl;
-		std::cout << launcher->getNick() << std::endl;
+		//std::cout << "weepa" << std::endl;
+		//std::cout << launcher->getNick() << std::endl;
 		response = "";
 		response += ":";
 		response += launcher->getNick();
@@ -79,8 +110,8 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " ";
 		}
 		response += "\r\n";
-		std::cout << response << std::endl;
-		std::cout << "endofweeepa" << std::endl;
+		//std::cout << response << std::endl;
+		//std::cout << "endofweeepa" << std::endl;
 	}
 	//std::cout << "cmdResponse: " << response << std::endl;
 	return (response);
@@ -120,8 +151,9 @@ void	Command::handleCmd()
 		for (std::vector<std::string>::iterator y = i->second.begin(); y != i->second.end(); y++)
 		{
 			params.push_back(*y);
-			if (params[0] == "NICK")
+			/*if (params[0] == "NICK")
 				std::cout << *y << std::endl;
+				*/
 		}
 		markAction(params);
 		params.clear();
@@ -131,13 +163,18 @@ void	Command::handleCmd()
 void	Command::markAction(std::vector<std::string> params)
 {
 	std::string cmd = params[0];
-	std::cout << cmd << " : " << params.size()<< std::endl;;
+	//std::cout << cmd << " : " << params.size()<< std::endl;;
 	//std::cout << "iusa" << std::endl;
 	//std::cout << cmd << std::endl;
 	if (cmd == "PASS")
 		pass(params);
 	else if (cmd == "NICK")
+	{
+		//std::cout << "HOLIIIIII!!!" << std::endl;
+		//for (size_t i = 0; i <  params.size(); i++)
+		//	std::cout << params[i] << std::endl;
 		nick(params);
+	}
 	else if (cmd == "USER")
 		user(params);
 	else if (cmd == "CAP")
@@ -146,7 +183,7 @@ void	Command::markAction(std::vector<std::string> params)
 		quit(params);
 	else if (cmd == "PRIVMSG")
 	{
-		std::cout << "comienza" << std::endl;
+		//std::cout << "comienza" << std::endl;
 		privmsg(params);
 	}
 	else if (cmd == "")
@@ -279,7 +316,7 @@ int	Command::pass(std::vector<std::string> params)
 	launcher->setResponse(response);
 	launcher->setNCmd(launcher->getCommand());
 	launcher->setPollOut(1);*/
-	welcome(params);
+	//welcome(params);
 	return 0;
 }
 
@@ -317,7 +354,6 @@ int	Command::user(std::vector<std::string> params)
 	return 0;
 }
 
-//queda por comprobar que el nick es unico
 int	Command::nick(std::vector<std::string> params)
 {
 	//std::string response = responseGenerator(-1, params);
@@ -334,9 +370,9 @@ int	Command::nick(std::vector<std::string> params)
 		*/
 		return 3;
 	}
-	for (std::vector<Client *>::iterator it = clients.begin(); it != clients.end(); it++)
+	for (std::vector<Client >::iterator it = clients->begin(); it != clients->end(); it++)
 	{
-		if ((*it)->getNick() == params[1])
+		if ((*it).getNick() == params[1])
 		{
 			markEverything(NICK_REPEATED, params);
 			/*launcher->setCommand(NICK_REPEATED);
@@ -365,7 +401,7 @@ int	Command::nick(std::vector<std::string> params)
 	launcher->setNCmd(launcher->getCommand());
 	launcher->setPollOut(1);
 	*/
-	welcome(params);
+	//welcome(params);
 	return 0;
 }
 
@@ -401,7 +437,7 @@ int Command::welcome(std::vector<std::string> params)
 		launcher->setResponse(response);
 		launcher->setNCmd(launcher->getCommand());
 	}*/
-	if (launcher->getNick() == "" || launcher->getUser() == "" || launcher->getPsswd() == "")
+	if (launcher->getNick() != "" || launcher->getUser() != "" || launcher->getPsswd() != "")
 	{
 		markEverything(WELCOME, params);
 	}
@@ -419,16 +455,16 @@ void	Command::markie(Client *c, std::vector<std::string> params)
 	c->setPollOut(1);
 }
 
-void	Command::markPollOut(std::vector<Client *> clients, std::vector<std::string> dest, std::vector<std::string> params)
+void	Command::markPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params)
 {
 	for (size_t y = 0; y < dest.size(); y++)
 	{
-		for (size_t i = 0; i < clients.size(); i++)
+		for (size_t i = 0; i < clients->size(); i++)
 		{
-			if (dest[y] == clients[i]->getNick())
+			if (dest[y] == clients->at(i).getNick())
 			{
-				std::cout << "eing??" << std::endl;
-				markie(clients[i], params);
+				//std::cout << "eing??" << std::endl;
+				markie(&clients->at(i), params);
 			}
 		}
 	}
@@ -453,6 +489,6 @@ void	Command::privmsg(std::vector<std::string> params)
 	//caso respuesta valida
 	dest = split(params[1], ",");
 	markPollOut(clients, dest, params);
-	std::cout << "gepasa" << std::endl;
+	//std::cout << "gepasa" << std::endl;
 }
 
