@@ -18,7 +18,7 @@ class Server
 		struct pollfd	*clientSock;
 		int		serverSock;
 		std::vector<Client>	clients;
-		Command			cmd;
+		//Command			cmd;
 		/* Channel
 		std::map<std::string, Channel> channels;
 		*/

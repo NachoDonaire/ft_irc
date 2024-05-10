@@ -39,6 +39,7 @@ int	Server::reallocPollFd(int index)
 	y = 0;
 	while (i < currentSize)
 	{
+		std::cout << "x" << std::endl;
 		if (i == index)
 		{
 			i++;
@@ -48,12 +49,17 @@ int	Server::reallocPollFd(int index)
 		neopfd[y].events = clientSock[i].events;
 		neopfd[y++].revents = clientSock[i++].revents;
 	}
-	free(clientSock);
-	this->clientSock = (struct pollfd *)malloc(sizeof(struct pollfd) * (size + 1));
-	memcpy(clientSock, neopfd, sizeof(struct pollfd) * (size + 1));
-	this->clientSock[size].fd = POLLFD_LIMIT;
-	currentSize = pollfdLen();
-	std::cout << "CURRENT SIZE AT REALLOC (" << index << ")" << currentSize <<std::endl;
+	//std::cout << "eeeepa" << std::endl;
+	if (clientSock)
+		free(clientSock);
+	this->clientSock = (struct pollfd *)malloc(sizeof(struct pollfd) * (size ));
+	memcpy(clientSock, neopfd, sizeof(struct pollfd) * (size ));
+	//this->clientSock[currentSize].fd = POLLFD_LIMIT;
+	//std::cout << "eeeepa" << std::endl;
+	//this->clientSock[size].fd = POLLFD_LIMIT;
+	//currentSize = pollfdLen();
+	///std::cout << "eeeepa" << std::endl;
+	std::cout << "CURRENT SIZE AT REALLOC (" << index << ")" << size <<std::endl;
 	//pollfdcpy(neopfd, size);
 	return size;
 }
@@ -64,9 +70,10 @@ Server::Server(char *p, char *pd, std::string hn) : port(p)
 	hostName = hn;
 	
 	// 1 para el listener
-	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (2));
+	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd));
 	this->clientSock[1].fd = POLLFD_LIMIT;
-	currentSize = pollfdLen();
+	currentSize = 1;
+	//currentSize = pollfdLen();
 	std::cout << "CURRENT SIZE AT CONSTRUCTOR" << currentSize <<std::endl;
 	//clients.push_back(Client(clientSock[currentSize].fd, currentSize, psswd, hostName));
 	//commands["PASS"] = &Server::pass;
@@ -116,17 +123,22 @@ void	Server::establishConnection()
 	currentSize = reallocPollFd(-1);
 	//currentSize++;
 	std::cout << currentSize - 1 << std::endl;
+	std::cout << "uuugundis" << std::endl;
 	clientSock[currentSize - 1].fd = accept(serverSock, rp->ai_addr, &rp->ai_addrlen);
 	if (clientSock[currentSize - 1].fd < 0)
 	{
-		currentSize = reallocPollFd(currentSize);
+		std::cout << "uuugundis2" << std::endl;
+		std::cout << "tukie" << std::endl;
+		currentSize = reallocPollFd(currentSize - 1);
+		std::cout << "tukie2" << std::endl;
 	}
 	else
 	{
+		std::cout << "uuugundis3" << std::endl;
 		clientSock[currentSize - 1].events = (POLLIN); 
-		clientSock[currentSize].fd = POLLFD_LIMIT;
 		clients.push_back(Client(clientSock[currentSize - 1].fd, currentSize - 1, psswd, hostName));
 	}
+	//clientSock[currentSize].fd = POLLFD_LIMIT;
 	//std::cout << "Brand new Cadillac" << std::endl;
 }
 
@@ -135,11 +147,14 @@ void	Server::checkClientEvents()
 	std::vector<int>	pos;
 	//std::cout << "alakazo" << std::endl;
 	
+	std::cout << "uuugundis4" << std::endl;
 	for (int y = 1; y < currentSize; y++)
 	{
 		//std::cout << "revents " << clients[y - 1].getSocket() << " : " << clientSock[y].revents << std::endl;
+		std::cout << "uuugundis5" << std::endl;
 		if (clientSock[y].revents & POLLIN)
 		{
+			std::cout << "uuugundis6" << std::endl;
 			int nread = recv(clientSock[y].fd, this->recData, 512, 0);
 			if (nread <= 0)
 			{
@@ -166,7 +181,7 @@ void	Server::checkClientEvents()
 			//std::cout << "size of both : " << aux.size() << NCmd.size() << std::endl;
 			for (size_t i = 0; i < clients[y - 1].getResponses().size(); i++)
 			{
-				std::cout << aux[i] << std::endl;
+				//std::cout << aux[i] << std::endl;
 				send(clients[y - 1].getSocket(), aux[i].c_str(), aux[i].size(), 0);
 				//std::cout << aux[i] << std::endl;
 				if (NCmd[i] == BAD_PSSWD || NCmd[i] == QUIT)
@@ -185,8 +200,10 @@ void	Server::checkClientEvents()
 	{
 		close(clientSock[*it].fd);
 		currentSize = reallocPollFd(*it);
+		//clientSock[currentSize].fd = POLLFD_LIMIT;
 		clients.erase(y + (*it - 1));
 	}
+	std::cout << "uuugundis4000" << std::endl;
 
 }
 
@@ -213,8 +230,12 @@ void	Server::handleMessages()
 	std::vector<Client>::iterator y;
 	int							parseStatus;
 
+	std::cout << "uuugundis98" << std::endl;
+	std::cout << "uuugundis98" << std::endl;
+	//AQUI HAY SEGFULT
 	for (y = clients.begin(); y != clients.end(); y++)
 	{
+		std::cout << "uuugundis98" << std::endl;
 		if ((*y).getMsg() != "")
 		{
 			parseStatus = (*y).parseMsg();
@@ -227,6 +248,7 @@ void	Server::handleMessages()
 			(*y).setMsg("");
 		}
 	}
+	std::cout << "uuugundis7000" << std::endl;
 }
 			
 

@@ -374,6 +374,7 @@ int	Command::nick(std::vector<std::string> params)
 		if ((*it).getNick() == params[1])
 		{
 			markEverything(NICK_REPEATED, params);
+			launcher->setPollOut(1);
 			/*launcher->setCommand(NICK_REPEATED);
 			response = responseGenerator(launcher->getCommand(), params);
 			launcher->setResponse(response);
@@ -402,7 +403,7 @@ int	Command::nick(std::vector<std::string> params)
 	launcher->setNCmd(launcher->getCommand());
 	launcher->setPollOut(1);
 	*/
-	//welcome(params);
+	welcome(params);
 	return 0;
 }
 
@@ -413,6 +414,8 @@ void	Command::quit(std::vector<std::string> params)
 	//std::string msg = responseGenerator(-2, params);
 	//send(launcher->getSocket(), msg.c_str(), msg.size(), 0);
 	markEverything(QUIT, params);
+	
+	launcher->setPollOut(1);
 	/*launcher->setCommand(QUIT);
 	response = responseGenerator(launcher->getCommand(), params);
 	launcher->setResponse(response);
@@ -425,15 +428,14 @@ void	Command::quit(std::vector<std::string> params)
 int Command::welcome(std::vector<std::string> params)
 {
 	std::string response;
-	int	check;
-	int	ncmd;
 
-	check = 0;
-	for (size_t i = 0; i < launcher->getNCmd().size() ; i++)
+	//std::cout << "NCMD" << std::endl;
+	if (launcher->getNick() != "" && launcher->getUser() != "" && launcher->getPsswd() != "" && !launcher->getRegister())
 	{
-		ncmd = launcher->getNCmd()[i];
-		if (ncmd == OK_PSSWD || ncmd == NICK_OK || ncmd == USER)
-			check++;
+		launcher->setRegister(1);
+		std::cout << "OKIDOKI" << std::endl;
+		markEverything(WELCOME, params);
+		launcher->setPollOut(1);
 	}
 /*	if (launcher->getStatus() == REGISTERED)
 	{
@@ -447,11 +449,6 @@ int Command::welcome(std::vector<std::string> params)
 		launcher->setResponse(response);
 		launcher->setNCmd(launcher->getCommand());
 	}*/
-	if (check == 3)
-	{
-		markEverything(WELCOME, params);
-		launcher->setPollOut(1);
-	}
 	return (0);
 }
 
