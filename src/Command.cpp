@@ -57,7 +57,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 	{
 		response += " 421 " + params[0] + " :Unknown command\r\n";
 	}
-	else if (msg == OK_PSSWD || msg == USER)
+	else if (msg == OK_PSSWD) //|| msg == USER)
 	{
 		response += "";
 	}
@@ -283,7 +283,6 @@ void	Command::markEverything(int cmd, std::vector<std::string> params)
 	response = responseGenerator(launcher->getCommand(), params);
 	launcher->setResponse(response);
 	launcher->setNCmd(launcher->getCommand());
-	launcher->setPollOut(1);
 }
 
 
@@ -316,7 +315,7 @@ int	Command::pass(std::vector<std::string> params)
 	launcher->setResponse(response);
 	launcher->setNCmd(launcher->getCommand());
 	launcher->setPollOut(1);*/
-	//welcome(params);
+	welcome(params);
 	return 0;
 }
 
@@ -381,6 +380,7 @@ int	Command::nick(std::vector<std::string> params)
 			launcher->setNCmd(launcher->getCommand());
 			launcher->setPollOut(1);
 			*/
+			launcher->setNick("");
 			return 2;
 		}
 	}
@@ -394,6 +394,7 @@ int	Command::nick(std::vector<std::string> params)
 		launcher->setStatus(REGISTERED);
 		*/
 	markEverything(NICK_OK, params);
+	launcher->setPollOut(1);
 	/*
 	launcher->setCommand(NICK_OK);
 	response = responseGenerator(launcher->getCommand(), params);
@@ -424,7 +425,16 @@ void	Command::quit(std::vector<std::string> params)
 int Command::welcome(std::vector<std::string> params)
 {
 	std::string response;
+	int	check;
+	int	ncmd;
 
+	check = 0;
+	for (size_t i = 0; i < launcher->getNCmd().size() ; i++)
+	{
+		ncmd = launcher->getNCmd()[i];
+		if (ncmd == OK_PSSWD || ncmd == NICK_OK || ncmd == USER)
+			check++;
+	}
 /*	if (launcher->getStatus() == REGISTERED)
 	{
 		std::cout << "registered" << std::endl;
@@ -437,9 +447,10 @@ int Command::welcome(std::vector<std::string> params)
 		launcher->setResponse(response);
 		launcher->setNCmd(launcher->getCommand());
 	}*/
-	if (launcher->getNick() != "" || launcher->getUser() != "" || launcher->getPsswd() != "")
+	if (check == 3)
 	{
 		markEverything(WELCOME, params);
+		launcher->setPollOut(1);
 	}
 	return (0);
 }

@@ -30,6 +30,7 @@ void	Server::printpfd(struct pollfd *src, int size)
 int	Server::reallocPollFd(int index)
 {
 	int	size = index < 0 ? currentSize + 1 : currentSize - 1;
+	//int	endof = index < 0 ? currentSize + 1 : currentSize;
 	struct pollfd neopfd[size];
 	int	i;
 	int	y;
@@ -52,6 +53,7 @@ int	Server::reallocPollFd(int index)
 	memcpy(clientSock, neopfd, sizeof(struct pollfd) * (size + 1));
 	this->clientSock[size].fd = POLLFD_LIMIT;
 	currentSize = pollfdLen();
+	std::cout << "CURRENT SIZE AT REALLOC (" << index << ")" << currentSize <<std::endl;
 	//pollfdcpy(neopfd, size);
 	return size;
 }
@@ -63,9 +65,9 @@ Server::Server(char *p, char *pd, std::string hn) : port(p)
 	
 	// 1 para el listener
 	this->clientSock = (struct pollfd *)malloc(sizeof(pollfd) * (2));
-	this->clientSock[1].fd = -7;
+	this->clientSock[1].fd = POLLFD_LIMIT;
 	currentSize = pollfdLen();
-	//std::cout << "CURRENT SIZE AT CONSTRUCTOR" << currentSize <<std::endl;
+	std::cout << "CURRENT SIZE AT CONSTRUCTOR" << currentSize <<std::endl;
 	//clients.push_back(Client(clientSock[currentSize].fd, currentSize, psswd, hostName));
 	//commands["PASS"] = &Server::pass;
 }	
@@ -122,7 +124,8 @@ void	Server::establishConnection()
 	else
 	{
 		clientSock[currentSize - 1].events = (POLLIN); 
-		clients.push_back(Client(clientSock[currentSize - 1].fd, currentSize, psswd, hostName));
+		clientSock[currentSize].fd = POLLFD_LIMIT;
+		clients.push_back(Client(clientSock[currentSize - 1].fd, currentSize - 1, psswd, hostName));
 	}
 	//std::cout << "Brand new Cadillac" << std::endl;
 }
@@ -157,12 +160,13 @@ void	Server::checkClientEvents()
 		}
 		if (clientSock[y].revents & POLLOUT)
 		{
-			std::string response;
+			//std::string response;
 			std::vector<std::string> aux = clients[y - 1].getResponses();
 			std::vector<int> NCmd = clients[y - 1].getNCmd();
 			//std::cout << "size of both : " << aux.size() << NCmd.size() << std::endl;
 			for (size_t i = 0; i < clients[y - 1].getResponses().size(); i++)
 			{
+				std::cout << aux[i] << std::endl;
 				send(clients[y - 1].getSocket(), aux[i].c_str(), aux[i].size(), 0);
 				//std::cout << aux[i] << std::endl;
 				if (NCmd[i] == BAD_PSSWD || NCmd[i] == QUIT)
@@ -199,6 +203,7 @@ void	Server::mark(Client *c, std::string msg, std::map<int, std::vector<std::str
 	Command cd(c, this->getClients(), hostName, msg, psswd, cm);
 	
 
+	//c->printShait();
 	cd.handleCmd();
 	//cd.printShait();
 }

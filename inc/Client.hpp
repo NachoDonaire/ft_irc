@@ -27,7 +27,7 @@ enum command {
 
 class Client
 {
-	protected:
+	private:
 		int	 	fd;
 		int	 	command;
 		int		off;
