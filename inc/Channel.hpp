@@ -21,14 +21,18 @@ public:
 	void deleteClient(vectorStr& users, const str& userId);
 	//kick
 	//invite
-	void invite(const str& senderId, const str& receiverId);
+	void checkInvite(const str& senderId);
 	//changeTopic
 	void changeTopic(const str& userId, const str& value);
 	//changeInviteMode
 	void changeInviteMode(const str& userId, const bool& value);
 	//changePassword
 	vectorStr::iterator findUser(vectorStr& users, const str& userId) const;
-
+	//mode set/remove channel key newPass "" para remove y con valor para set
+	void changePassword(const str& userId, const str& newPassword);
+	//mode give/take channnel operator privilege
+	void giveOperatorPrivilege(const str& senderId, const str& srcUser);
+	void takeOperatorPrivilege(const str& senderId, const str& srcUser);
 
 	vectorStr	getUsers() const;
 	vectorStr	getAdmins() const;
@@ -37,6 +41,7 @@ public:
 	str		getPassword() const;
 	int 		getMaxUsers() const;
 	bool 		getInviteMode() const;
+	bool		getTopicRestriction() const;
 
 	void		setUsers(vectorStr src);
 	void		setAdmins(vectorStr src);
@@ -45,6 +50,7 @@ public:
 	void		setPassword(str src);
 	void		setMaxUsers(int src);
 	void		setInviteMode(bool src);
+	void		setTopicRestriction(const bool& src);
 	
 private:
 	vectorStr	users;
@@ -54,6 +60,7 @@ private:
 	std::string 	password;
 	int 		maxUsers;
 	bool		inviteMode;
+	bool		topicRestriction;
 };
 
 #endif     //CHANNEL_H
