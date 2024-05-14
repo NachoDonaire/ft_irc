@@ -195,6 +195,7 @@ void	Command::markAction(std::vector<std::string> params)
 	else if (cmd == "JOIN")
 	{
 		std::cout << "el comando es join" << std::endl;
+		std::cout << "El nick de la clase cliente que ejecuta el join es: " << launcher->getUser() << std::endl;
 	}
 	else if (cmd == "")
 		return ;
