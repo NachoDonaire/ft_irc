@@ -2,6 +2,8 @@
 #define CLIENT_HPP
 
 #include <Ircsrv.hpp>
+typedef std::vector<std::string> 	vectorStr;
+typedef std::string 			str;
 
 enum status {
 	ERROR = -1,
@@ -49,15 +51,16 @@ class Client
 		std::vector<std::string> responses;
 		std::vector<int>	 cmds;
 
-		/* Channel
-		std::vector<std::string		channels;
-		*/
+		// Channel
+		vectorStr	channels;
 		
  	public:
-		/* Channel
-			join(id del canal a insertar)
-			kick(canal a eliminar)
-		*/
+		// Channel
+		void	join(const str& channelId);
+		void	kick(const str& channelId);
+		vectorStr	getChannels() const;
+		void		setChannels(const vectorStr& newChannels);
+
 		Client(int fd, int i, std::string sp, std::string hn);
 		void	setMsg(std::string message);
 		void	setResponse(std::string r) { this->responses.push_back(r);};
