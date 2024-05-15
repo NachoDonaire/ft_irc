@@ -1,7 +1,7 @@
 #include <Ircsrv.hpp>
 #include <Channel.hpp>
 
-Channel::Channel(): users(0), admins(0), topic(""), id(""), password(""), maxUsers(0), inviteMode(false)
+Channel::Channel(): users(0), admins(0), topic(""), id(""), password(""), maxUsers(-1), inviteMode(false), topicRestriction(false)
 {
 //Const
 }
@@ -19,7 +19,7 @@ Channel::~Channel()
 
 Channel& Channel::operator = (const Channel& src)
 {
-	users = src.getUsers();
+	this->users = src.getUsers();
 	return *this;
 }
 
@@ -48,7 +48,7 @@ str	Channel::getPassword() const
 	return this->password;
 }
 
-unsigned int Channel::getMaxUsers() const
+int Channel::getMaxUsers() const
 {
 	return this->maxUsers;
 }
@@ -56,6 +56,11 @@ unsigned int Channel::getMaxUsers() const
 bool	Channel::getInviteMode() const
 {
 	return this->inviteMode;
+}
+
+bool	Channel::getTopicRestriction() const
+{
+	return this->topicRestriction;
 }
 
 void 	Channel::setUsers(vectorStr src)
@@ -83,7 +88,7 @@ void	Channel::setPassword(str src)
 	this->password = src;
 }
 
-void	Channel::setMaxUsers(unsigned int src)
+void	Channel::setMaxUsers(int src)
 {
 	this->maxUsers = src;
 }
@@ -93,4 +98,98 @@ void	Channel::setInviteMode(bool src)
 	this->inviteMode = src;
 }
 
+void	Channel::setTopicRestriction(const bool& src)
+{
+	this->topicRestriction = src;
+}
+
+void	Channel::joinClient(const str& userId, const bool& isAdmin)
+{
+	try
+	{
+		joinClient(users, userId, isAdmin);
+	}
+	catch (std::exception& e)
+	{
+		joinClient(admins, userId, isAdmin);
+	}
+}
+void 	Channel::joinClient(vectorStr& users, const str& userId, const bool& isAdmin)
+{
+	if (userId == "")
+		throw std::logic_error("Provide a valid userId to join to the Channel.");
+	if (users.size() == maxUsers)
+		throw std::logic_error("The Channel is full");
+	vectorStr::iterator user = findUser(users, userId);
+	if (user != users.end())
+		throw std::logic_error("The user is already in the Channel");
+	users.push_back(userId);
+}
+
+void	Channel::deleteClient(vectorStr& users, const str& userId)
+{
+	vectorStr::iterator user = findUser(users, userId);
+	if (user == users.end())
+		user = findUser(admins, userId);
+	if (user == admins.end())
+		throw std::logic_error("The userId wasn't find in the Channel");
+	users.erase(user);
+}
+
+void	Channel::deleteClient(const str& userId)
+{
+	try
+	{
+		deleteClient(users, userId);
+	}
+	catch(std::exception& e)
+	{
+		deleteClient(admins, userId);
+	}
+}
+
+vectorStr::iterator	Channel::findUser(vectorStr& users, const str& userId) const
+{
+	vectorStr::iterator user = users.begin();
+	while (user != users.end() && *user != userId)
+		user++;
+	return user;
+}
+
+void	Channel::checkInvite(const str& senderId)
+{
+	vectorStr::iterator sender = findUser(admins, senderId);
+	if (sender == admins.end())
+		throw std::logic_error("The sender is not an operator of the Channel.");
+	vectorStr::iterator user = findUser(admins, senderId);
+	if (inviteMode == true && user == admins.end())
+		throw std::logic_error("The user need to be an operator of the Cannel.");
+	else if (inviteMode == false && user == admins.end() && findUser(users, senderId) == users.end())
+		throw std::logic_error("The user is not in the Channel.");
+	//if the invite can be done, the function doesn't throw any exception
+}
+
+void	Channel::changeTopic(const str& userId, const str& value)
+{
+	vectorStr::iterator user = findUser(admins, userId);
+	if (topicRestriction == true && user == admins.end())
+		throw std::logic_error("The user need to be an operator of the Cannel.");
+	else if (topicRestriction == false && user == admins.end() && findUser(users, userId) == users.end())
+		throw std::logic_error("The user is not in the Channel.");
+	this->topic = value;
+}
+
+void	Channel::changeInviteMode(const str& userId, const bool& value)
+{
+	if (findUser(admins, userId) == admins.end())
+		throw std::logic_error("The user need to be an operator of the Cannel.");
+	this->inviteMode = value;
+}
+
+void	Channel::changePassword(const str& userId, const str& newPassword)
+{
+	if (findUser(admins, userId) == admins.end())
+		throw std::logic_error("The user need to be an operator of the Cannel.");
+	this->password = newPassword;
+}
 

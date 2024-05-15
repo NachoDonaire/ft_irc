@@ -163,6 +163,12 @@ void	Command::handleCmd()
 void	Command::markAction(std::vector<std::string> params)
 {
 	std::string cmd = params[0];
+	std::cout << "Params: {" << std::endl;
+	for (std::size_t i = 0; i < params.size(); i++)
+	{
+		std::cout << " " << params[i];
+	}
+	std::cout << " }" << std::endl;
 	//std::cout << cmd << " : " << params.size()<< std::endl;;
 	//std::cout << "iusa" << std::endl;
 	//std::cout << cmd << std::endl;
@@ -186,12 +192,19 @@ void	Command::markAction(std::vector<std::string> params)
 		//std::cout << "comienza" << std::endl;
 		privmsg(params);
 	}
+	else if (cmd == "JOIN")
+	{
+		std::cout << "el comando es join" << std::endl;
+		std::cout << "El nick de la clase cliente que ejecuta el join es: " << launcher->getUser() << std::endl;
+	}
 	else if (cmd == "")
 		return ;
 	else
 	{
 		launcher->setCommand(CMD_NOTFOUND);
 	}
+/*
+*/
 }
 
 void	Command::cap(std::vector<std::string> params)
