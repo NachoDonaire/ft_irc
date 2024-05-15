@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 		std::cerr << "1. port\n2. password" << std::endl;
 		return 1;
 	}
-	std::string hostname(":tuckerson.tuki.com");
+	std::string hostname("tuckerson.tuki.com");
 	Server	irc(argv[1], argv[2], hostname);
 
 	if (irc.launchServer() != 0)

@@ -3,7 +3,7 @@
 Command::Command()
 {}
 
-Command::Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp, std::map<int, std::vector<std::string> > cm) : msg(ms)
+Command::Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp)
 {
 
 	/*for (size_t i = 0; i < cl->size(); i++)
@@ -50,7 +50,8 @@ void	Command::printShait()
 
 std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 {
-	std::string response(hostName);
+	std::string response(":");
+	response += hostName;
 
 	//std::cout << c.getStatus() << std::endl;
 	if (msg == CMD_NOTFOUND)
@@ -100,8 +101,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 	{
 		//std::cout << "weepa" << std::endl;
 		//std::cout << launcher->getNick() << std::endl;
-		response = "";
-		response += ":";
+		response = ":";
 		response += launcher->getNick();
 		response += " PRIVMSG " + params[1] +  " :";
 		for (size_t  i = 2; i < params.size(); i++)

@@ -14,7 +14,7 @@ class Command
 		std::map<int, std::vector<std::string> >	cmd;
 		Client						*launcher;
  	public:
-    		Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp, std::map<int, std::vector<std::string> > cm);
+    		Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp);
     		~Command();
     		Command();
 		Command& operator=(const Command&);

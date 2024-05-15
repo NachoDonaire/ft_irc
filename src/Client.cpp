@@ -27,6 +27,7 @@ Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), 
 	parseStatus = 1;
 	off = 0;
 	registered = 0;
+	msg = "";
 	//pollout = 1;
 }
 
