@@ -12,6 +12,11 @@ Channel::Channel(const Channel& src)
 	*this = src;
 }
 
+Channel::Channel(const str& id): users(0), admins(0), topic(""), id(id), password(""), maxUsers(-1), inviteMode(false), topicRestriction(false)
+{
+
+}
+
 Channel::~Channel()
 {
 //Dest

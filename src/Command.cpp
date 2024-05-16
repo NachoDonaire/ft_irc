@@ -417,8 +417,9 @@ void	Command::join(const vectorStr& params, const str& userId)
 	vectorCh::iterator channel = getChannel(params[1]);
 	if (channel == channels->end())
 	{
-//		channels->push_back(new Channel(params[1]));
-		channel->joinClient(userId, "", true);
+		Channel ch = Channel(params[1]);
+		ch.joinClient(userId, "", true);
+		channels->push_back(ch);
 	}
 }
 
