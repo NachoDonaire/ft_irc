@@ -28,6 +28,7 @@ Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), 
 	off = 0;
 	registered = 0;
 	msg = "";
+	channels = vectorStr(0);
 	//pollout = 1;
 }
 
@@ -115,6 +116,7 @@ Client* Client::operator=(const Client* f)
 	username = f->username;
 	responses =  f->responses;
 	cmds = f->cmds;
+	channels = f->channels;
 	return this;
 }
 
@@ -171,3 +173,23 @@ void	Client::printeito()
 	std::cout << "user : " << username << std::endl;
 	std::cout << "socket : " << fd << std::endl;
 }
+
+vectorStr	Client::getChannels() const
+{
+	return this->channels;
+}
+
+void		Client::setChannels(const vectorStr& newChannels)
+{
+	this->channels = newChannels;
+}
+
+/*
+void		Client::join(const str& channelId)
+{
+}
+
+void		Client::kick(const str& channelId)
+{
+}
+*/

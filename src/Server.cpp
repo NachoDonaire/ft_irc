@@ -133,22 +133,26 @@ void	Server::checkClientEvents()
 				std::cerr << "error at reading, quiting this client" << std::endl;
 				out.push_back(pos);
 			}
+			this->recData[nread] = '\0';
+			std::cout << recData << std::endl;
 			sit->setMsg(this->recData);
 		}
 		else if (it->revents & POLLOUT)
 		{
 			std::vector<std::string>	responses = sit->getResponses();
-			std::vector<int>::iterator	ncmd = sit->getNCmd().begin();
+			std::vector<int>		ncmd = sit->getNCmd();
+			std::vector<int>::iterator	ncmdit = ncmd.begin();
 
 			for(std::vector<std::string>::iterator r = responses.begin(); r != responses.end(); r++)
 			{
 				std::cout << *r << std::endl;
 				send(sit->getSocket(), r->c_str(), r->size(), 0);
-				if (*ncmd == BAD_PSSWD || *ncmd == QUIT)
+				if (*ncmdit == BAD_PSSWD || *ncmdit == QUIT)
 				{
 					out.push_back(pos);
 				}
-				ncmd++;
+				ncmdit++;
+				//pos++;
 			}
 			sit->emptyResponse();
 			sit->emptyNCmd();

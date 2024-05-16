@@ -15,7 +15,6 @@ class Server
 		int		currentSize;
 		char 		recData[512];
 		struct addrinfo	*rp;
-		struct sockaddr_in	addr;
 		std::vector<struct pollfd>	clientSock;
 		int		serverSock;
 		std::vector<Client>	clients;
