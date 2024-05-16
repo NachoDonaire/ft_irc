@@ -26,7 +26,6 @@ class Command
 		void	cap(std::vector<std::string> params);
 		int	nick(std::vector<std::string> params);
 		int	user(std::vector<std::string> params);
-		void	notEnoughParams(std::vector<std::string> params);
 		void	quit(std::vector<std::string> params);
 		void	handleCmd();
 		std::string responseGenerator(int msg, std::vector<std::string> params);
