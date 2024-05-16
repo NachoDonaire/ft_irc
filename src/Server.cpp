@@ -6,6 +6,7 @@
 
 Server::Server()
 {
+	channels = vectorCh(0);
 }
 
 void	Server::printClientSock()
@@ -172,7 +173,7 @@ void	Server::checkClientEvents()
 
 void	Server::mark(Client *c, std::string msg)//, std::map<int, std::vector<std::string> > cm)
 {
-	Command cd(c, this->getClients(), hostName, msg, psswd);
+	Command cd(c, this->getClients(), hostName, msg, psswd, this->getChannels());
 	
 
 	//c->printShait();
