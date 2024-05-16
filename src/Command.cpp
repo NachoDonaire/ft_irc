@@ -3,7 +3,7 @@
 Command::Command()
 {}
 
-Command::Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp)
+Command::Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp, vectorCh* serverChannels)
 {
 
 	msg = ms;
@@ -12,6 +12,7 @@ Command::Command(Client *l, std::vector<Client> *cl, std::string hostN, std::str
 	servPsswd = sp;
 	hostName = hostN;
 	launcher = l;
+	channels = serverChannels;
 }
 
 //printea informacion relativa a la clase. launcher es el cliente que lanza el comando y tiene una funcion analoga
@@ -178,7 +179,8 @@ void	Command::markAction(std::vector<std::string> params)
 	else if (cmd == "JOIN")
 	{
 		std::cout << "el comando es join" << std::endl;
-		std::cout << "El nick de la clase cliente que ejecuta el join es: " << launcher->getNick() << std::endl;
+		std::cout << "El nick de la clase cliente que ejecuta el join es: " << launcher->getUser() << std::endl;
+		join(params, launcher->getUser());
 	}
 	else if (cmd == "")
 		return ;
@@ -409,3 +411,21 @@ void	Command::privmsg(std::vector<std::string> params)
 	markPollOut(clients, dest, params);
 }
 
+void	Command::join(const vectorStr& params, const str& userId)
+{
+	std::cout << "params 1 : " << params[1] << std::endl;
+	vectorCh::iterator channel = getChannel(params[1]);
+	if (channel == channels->end())
+	{
+//		channels->push_back(new Channel(params[1]));
+		channel->joinClient(userId, "", true);
+	}
+}
+
+vectorCh::iterator	Command::getChannel(const str& id)
+{
+	vectorCh::iterator channel = channels->begin();
+	while (channel != channels->end() && channel->getId() != id)
+		++channel;
+	return channel;
+}
