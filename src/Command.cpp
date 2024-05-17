@@ -45,9 +45,65 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 	std::string response(":");
 	response += hostName;
 
+	switch (msg)
+	{
+		case(CMD_NOTFOUND):
+			response += " 421 " + params[0] + " :Unknown command";
+		break;
+		case(OK_PSSWD):
+			response += "";
+		break;
+		case(NICK_OK):
+			response += " 381 " + launcher->getNick() + " :Nick " + launcher->getNick() + " magnificent set!";
+		break;
+		case(NICK_REPEATED):
+			response += " 433 * " + params[1] + " :Nickname is already in use.";
+		break;
+		case(QUIT):
+			if (params.size() <= 1)
+				response += " QUIT: No leaving message";
+			else
+			{
+				std::string quitMsg(&params[1].c_str()[1]);
+				response += " QUIT: ";
+				response += quitMsg;
+			}
+		break;
+		case(ERROR):
+			response += " 461 ";
+			response += params[0];
+			response += " :Not enough or too much params for ";
+			response += params[0];
+		break;
+		case(WELCOME):
+			response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
+		break;
+		case(BAD_PSSWD):
+			response += " Bad password, try to reconnect setting password again";
+		break;
+		case(PRIVMSG):
+			response = ":";
+			response += launcher->getNick();
+			response += " PRIVMSG " + params[1] +  " :";
+			for (size_t  i = 2; i < params.size(); i++)
+			{
+				response += params[i];
+				response += " ";
+			}
+		break;
+		case(JOIN_OK):
+			response = ":" + launcher->getNick() + " " + params[0] + " " + params[1];
+		break;
+		case(ERR_BADCHANNELKEY):
+			response = params[1] + " :Cannot join channel (+k)";
+		break;
+		case(ERR_CHANNELISFULL):
+		break;
+	}
+/*
 	if (msg == CMD_NOTFOUND)
 	{
-		response += " 421 " + params[0] + " :Unknown command\r\n";
+		response += " 421 " + params[0] + " :Unknown command";
 	}
 	else if (msg == OK_PSSWD)
 	{
@@ -55,11 +111,11 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 	}
 	else if (msg == NICK_OK)
 	{
-		response += " 381 " + launcher->getNick() + " :Nick " + launcher->getNick() + " magnificent set!\r\n";
+		response += " 381 " + launcher->getNick() + " :Nick " + launcher->getNick() + " magnificent set!";
 	}
 	else if (msg == NICK_REPEATED)
 	{
-		response += " 433 * " + params[1] + " :Nickname is already in use.\r\n";
+		response += " 433 * " + params[1] + " :Nickname is already in use.";
 	}
 	else if (msg == QUIT)
 	{
@@ -74,7 +130,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 	}
 	else if (msg == WELCOME)// && launcher->getStatus() == REGISTER_PENDING)
 	{
-		response += " 001 " + launcher->getNick() + " :Welcome to ircserv !\r\n";
+		response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
 	}
 	else if (msg == ERROR)
 	{
@@ -82,11 +138,10 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		response += params[0];
 		response += " :Not enough or too much params for ";
 		response += params[0];
-		response += "\r\n";
 	}
 	else if (msg == BAD_PSSWD)
 	{
-		response += " Bad password, try to reconnect setting password again\r\n";
+		response += " Bad password, try to reconnect setting password again";
 	}
 	else if (msg == PRIVMSG)
 	{
@@ -100,12 +155,18 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += params[i];
 			response += " ";
 		}
-		response += "\r\n";
+//		response += "\r\n";
 		//std::cout << response << std::endl;
 		//std::cout << "endofweeepa" << std::endl;
 	}
+	else if (JOIN_OK == msg)
+	{
+		response = ":" + launcher->getNick() + " " + params[0] + " " + params[1];
+	}
+*/
+	
 	//std::cout << "cmdResponse: " << response << std::endl;
-	return (response);
+	return (response + "\r\n");
 }
 
 
@@ -180,7 +241,19 @@ void	Command::markAction(std::vector<std::string> params)
 	{
 		std::cout << "el comando es join" << std::endl;
 		std::cout << "El nick de la clase cliente que ejecuta el join es: " << launcher->getUser() << std::endl;
-		join(params, launcher->getUser());
+		int responseType;
+	
+		try
+		{
+			join(params, launcher->getNick());
+			responseType = JOIN_OK;
+		}
+		catch(std::exception& e)
+		{
+			responseType = stringToEnum(e.what());
+		}
+		markEverything(responseType, params);
+		launcher->setPollOut(1);
 	}
 	else if (cmd == "")
 		return ;
@@ -284,8 +357,6 @@ void	Command::markEverything(int cmd, std::vector<std::string> params)
 	launcher->setResponse(response);
 	launcher->setNCmd(launcher->getCommand());
 }
-
-
 
 int	Command::pass(std::vector<std::string> params)
 {
@@ -414,13 +485,20 @@ void	Command::privmsg(std::vector<std::string> params)
 void	Command::join(const vectorStr& params, const str& userId)
 {
 	std::cout << "params 1 : " << params[1] << std::endl;
-	vectorCh::iterator channel = getChannel(params[1]);
+	str name = params[1];
+	str password = (params.size() == 3) ? params[2] : "";  
+	vectorCh::iterator channel = getChannel(name);
 	if (channel == channels->end())
 	{
-		Channel ch = Channel(params[1]);
-		ch.joinClient(userId, "", true);
+		Channel ch = Channel(name);
+		ch.joinClient(userId, password, true);
 		channels->push_back(ch);
+		
 	}
+	else
+		channel->joinClient(userId, password, false);
+	//markEverything(JOIN_OK, params);
+	//launcher->setPollOut(1);
 }
 
 vectorCh::iterator	Command::getChannel(const str& id)
@@ -430,3 +508,57 @@ vectorCh::iterator	Command::getChannel(const str& id)
 		++channel;
 	return channel;
 }
+
+int Command::stringToEnum(const str& str) {
+    static std::map<std::string, int> stringToEnumMap;
+
+    if (stringToEnumMap.empty()) {
+        stringToEnumMap["CMD_ERROR"] = CMD_ERROR;
+        stringToEnumMap["CMD_NOTFOUND"] = CMD_NOTFOUND;
+        stringToEnumMap["NICK_OK"] = NICK_OK;
+        stringToEnumMap["NICK_REPEATED"] = NICK_REPEATED;
+        stringToEnumMap["WELCOME"] = WELCOME;
+        stringToEnumMap["QUIT"] = QUIT;
+        stringToEnumMap["CAP_LS"] = CAP_LS;
+        stringToEnumMap["CAP_END"] = CAP_END;
+        stringToEnumMap["PRIVMSG"] = PRIVMSG;
+        stringToEnumMap["BAD_PSSWD"] = BAD_PSSWD;
+        stringToEnumMap["USER"] = USER;
+        stringToEnumMap["OK_PSSWD"] = OK_PSSWD;
+        stringToEnumMap["JOIN_OK"] = JOIN_OK;
+        stringToEnumMap["ERR_NEEDMOREPARAMS"] = ERR_NEEDMOREPARAMS;
+        stringToEnumMap["ERR_INVITEONLYCHAN"] = ERR_INVITEONLYCHAN;
+        stringToEnumMap["ERR_CHANNELISFULL"] = ERR_CHANNELISFULL;
+        stringToEnumMap["ERR_NOSUCHCHANNEL"] = ERR_NOSUCHCHANNEL;
+        stringToEnumMap["ERR_BADCHANNELKEY"] = ERR_BADCHANNELKEY;
+        stringToEnumMap["RPL_TOPIC"] = RPL_TOPIC;
+        stringToEnumMap["RPL_NAMREPLY"] = RPL_NAMREPLY;
+    }
+
+    std::map<std::string, int>::const_iterator it = stringToEnumMap.find(str);
+    if (it != stringToEnumMap.end()) {
+        return it->second;
+    } else {
+        return CMD_NOTFOUND;
+    }
+}
+
+std::vector<std::string> splitString(const std::string& str, char delimiter) {
+    std::vector<std::string> parts;
+    std::string part;
+    for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
+        if (*it == delimiter) {
+            if (!part.empty()) {
+                parts.push_back(part);
+                part.clear();
+            }
+        } else {
+            part += *it;
+        }
+    }
+    if (!part.empty()) {
+        parts.push_back(part);
+    }
+    return parts;
+}
+
