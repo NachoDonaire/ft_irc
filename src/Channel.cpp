@@ -110,9 +110,9 @@ void	Channel::setTopicRestriction(const bool& src)
 
 void	Channel::joinClient(const str& userId, const str& password, const bool& isAdmin)
 {
-	std::cout << "llega hasta aqui y mete al usuario" << std::endl;
 	if (password != this->password)
-		throw std::logic_error("The password provided is not valid for the channel");
+		//throw std::logic_error("The password provided is not valid for the channel");
+		throw std::logic_error("ERR_BADCHANNELKEY");
 	if (!isAdmin)
 		joinClient(users, userId, isAdmin);
 	else
@@ -123,13 +123,15 @@ void 	Channel::joinClient(vectorStr& users, const str& userId, const bool& isAdm
 	if (userId == "")
 		throw std::logic_error("Provide a valid userId to join to the Channel.");
 	if (users.size() + admins.size() >= maxUsers && maxUsers >= 0)
-		throw std::logic_error("The Channel is full");
+		//throw std::logic_error("The Channel is full");
+		throw std::logic_error("ERR_CHANNELISFULL");
 	vectorStr::iterator user = findUser(users, userId);
+	//El client no manda mensaje si el usuario ya está en el canal
+	//revisar si se pasan varios canales y el usuario ya está en uno que hace el cliente 
 	if (user != users.end() || findUser(admins, userId) != admins.end())
 		throw std::logic_error("The user is already in the Channel");
 
 	isAdmin ? admins.push_back(userId) : users.push_back(userId);
-	std::cout << "llega hasta aqui y mete al usuario" << std::endl;
 }
 
 void	Channel::deleteClient(vectorStr& users, const str& userId)
