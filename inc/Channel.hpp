@@ -14,7 +14,7 @@ public:
 	Channel(const str& id);
    	Channel& 	operator=(const Channel& src);
 	//joinClient
-	void joinClient(const str& userId, const bool& isAdmin);
+	void joinClient(const str& userId, const str& password, const bool& isAdmin);
 	void joinClient(vectorStr& users, const str& userId, const bool& isAdmin);
 	//deleteClient
 	void deleteClient(const str& userId);
@@ -33,6 +33,8 @@ public:
 	//mode give/take channnel operator privilege
 	void giveOperatorPrivilege(const str& senderId, const str& srcUser);
 	void takeOperatorPrivilege(const str& senderId, const str& srcUser);
+	//Check if the user is in the channel
+	bool isRegister(str& userId);
 
 	vectorStr	getUsers() const;
 	vectorStr	getAdmins() const;

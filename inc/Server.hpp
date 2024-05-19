@@ -4,7 +4,7 @@
 #include <Ircsrv.hpp>
 #include <Command.hpp>
 #include <Channel.hpp>
-
+typedef std::vector<Channel>	vectorCh;
 
 class Server
 {
@@ -15,10 +15,11 @@ class Server
 		int		currentSize;
 		char 		recData[512];
 		struct addrinfo	*rp;
-		struct sockaddr_in	addr;
 		std::vector<struct pollfd>	clientSock;
 		int		serverSock;
 		std::vector<Client>	clients;
+		/*Channel*/
+		vectorCh		channels;
  	public:
     		Server(char *port, char *passwd, std::string hostname);
     		Server();
@@ -33,6 +34,8 @@ class Server
 		void		printClientSock();
 		bool		handleConnections();
 		std::vector<Client>		*getClients() { return &this->clients; };
+		/*Channel*/
+		vectorCh*			getChannels() { return &this->channels; };
 
 };
 

@@ -3,6 +3,9 @@
 
 #include <Client.hpp>
 #include <Ircsrv.hpp>
+#include <Channel.hpp>
+typedef std::vector<Channel>	vectorCh;
+typedef std::string		str;
 
 class Command
 {
@@ -13,8 +16,10 @@ class Command
 		std::string					servPsswd;
 		std::map<int, std::vector<std::string> >	cmd;
 		Client						*launcher;
+		/* Channel */
+		vectorCh					*channels;
  	public:
-    		Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp);
+    		Command(Client *l, std::vector<Client> *cl, std::string hostN, std::string ms, std::string sp, vectorCh* serverChannels);
     		~Command();
     		Command();
 		Command& operator=(const Command&);
@@ -26,7 +31,6 @@ class Command
 		void	cap(std::vector<std::string> params);
 		int	nick(std::vector<std::string> params);
 		int	user(std::vector<std::string> params);
-		void	notEnoughParams(std::vector<std::string> params);
 		void	quit(std::vector<std::string> params);
 		void	handleCmd();
 		std::string responseGenerator(int msg, std::vector<std::string> params);
@@ -36,8 +40,12 @@ class Command
 		void	privmsg(std::vector<std::string> params);
 		void	markie(Client *c, std::vector<std::string> params);
 		void	markEverything(int cmd, std::vector<std::string> params);
+		void	markEveryThing(str& cmd, vectorStr& params);
 		void	markPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
-
+		/* Channel */
+		void			join(const vectorStr& params, const str& userId);
+		vectorCh::iterator	getChannel(const str& id);
+		int			stringToEnum(const str& str);
 };
 
 #endif

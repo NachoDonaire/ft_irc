@@ -12,6 +12,11 @@ Channel::Channel(const Channel& src)
 	*this = src;
 }
 
+Channel::Channel(const str& id): users(0), admins(0), topic(""), id(id), password(""), maxUsers(-1), inviteMode(false), topicRestriction(false)
+{
+
+}
+
 Channel::~Channel()
 {
 //Dest
@@ -103,27 +108,30 @@ void	Channel::setTopicRestriction(const bool& src)
 	this->topicRestriction = src;
 }
 
-void	Channel::joinClient(const str& userId, const bool& isAdmin)
+void	Channel::joinClient(const str& userId, const str& password, const bool& isAdmin)
 {
-	try
-	{
+	if (password != this->password)
+		//throw std::logic_error("The password provided is not valid for the channel");
+		throw std::logic_error("ERR_BADCHANNELKEY");
+	if (!isAdmin)
 		joinClient(users, userId, isAdmin);
-	}
-	catch (std::exception& e)
-	{
+	else
 		joinClient(admins, userId, isAdmin);
-	}
 }
 void 	Channel::joinClient(vectorStr& users, const str& userId, const bool& isAdmin)
 {
 	if (userId == "")
 		throw std::logic_error("Provide a valid userId to join to the Channel.");
-	if (users.size() == maxUsers)
-		throw std::logic_error("The Channel is full");
+	if (users.size() + admins.size() >= maxUsers && maxUsers >= 0)
+		//throw std::logic_error("The Channel is full");
+		throw std::logic_error("ERR_CHANNELISFULL");
 	vectorStr::iterator user = findUser(users, userId);
-	if (user != users.end())
+	//El client no manda mensaje si el usuario ya está en el canal
+	//revisar si se pasan varios canales y el usuario ya está en uno que hace el cliente 
+	if (user != users.end() || findUser(admins, userId) != admins.end())
 		throw std::logic_error("The user is already in the Channel");
-	users.push_back(userId);
+
+	isAdmin ? admins.push_back(userId) : users.push_back(userId);
 }
 
 void	Channel::deleteClient(vectorStr& users, const str& userId)
@@ -193,3 +201,10 @@ void	Channel::changePassword(const str& userId, const str& newPassword)
 	this->password = newPassword;
 }
 
+bool	Channel::isRegister(str& userId)
+{
+	vectorStr::iterator user = findUser(users, userId);
+	if (user == users.end())
+		user = findUser(admins, userId);
+	return (user != admins.end());
+}
