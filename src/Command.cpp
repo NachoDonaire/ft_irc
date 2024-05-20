@@ -49,16 +49,16 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 	{
 		case(CMD_NOTFOUND):
 			response += " 421 " + params[0] + " :Unknown command";
-		break;
+			break;
 		case(OK_PSSWD):
 			response += "";
-		break;
+			break;
 		case(NICK_OK):
 			response += " 381 " + launcher->getNick() + " :Nick " + launcher->getNick() + " magnificent set!";
-		break;
+			break;
 		case(NICK_REPEATED):
 			response += " 433 * " + params[1] + " :Nickname is already in use.";
-		break;
+			break;
 		case(QUIT):
 			if (params.size() <= 1)
 				response += " QUIT: No leaving message";
@@ -68,19 +68,19 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 				response += " QUIT: ";
 				response += quitMsg;
 			}
-		break;
+			break;
 		case(ERROR):
 			response += " 461 ";
 			response += params[0];
 			response += " :Not enough or too much params for ";
 			response += params[0];
-		break;
+			break;
 		case(WELCOME):
 			response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
-		break;
+			break;
 		case(BAD_PSSWD):
 			response += " Bad password, try to reconnect setting password again";
-		break;
+			break;
 		case(PRIVMSG):
 			response = ":";
 			response += launcher->getNick();
@@ -90,82 +90,16 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 				response += params[i];
 				response += " ";
 			}
-		break;
+			break;
 		case(JOIN_OK):
 			response = ":" + launcher->getNick() + " " + params[0] + " " + params[1];
-		break;
+			break;
 		case(ERR_BADCHANNELKEY):
 			response = params[1] + " :Cannot join channel (+k)";
-		break;
+			break;
 		case(ERR_CHANNELISFULL):
-		break;
+			break;
 	}
-/*
-	if (msg == CMD_NOTFOUND)
-	{
-		response += " 421 " + params[0] + " :Unknown command";
-	}
-	else if (msg == OK_PSSWD)
-	{
-		response += "";
-	}
-	else if (msg == NICK_OK)
-	{
-		response += " 381 " + launcher->getNick() + " :Nick " + launcher->getNick() + " magnificent set!";
-	}
-	else if (msg == NICK_REPEATED)
-	{
-		response += " 433 * " + params[1] + " :Nickname is already in use.";
-	}
-	else if (msg == QUIT)
-	{
-		if (params.size() <= 1)
-			response += " QUIT: No leaving message";
-		else
-		{
-			std::string quitMsg(&params[1].c_str()[1]);
-			response += " QUIT: ";
-			response += quitMsg;
-		}
-	}
-	else if (msg == WELCOME)// && launcher->getStatus() == REGISTER_PENDING)
-	{
-		response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
-	}
-	else if (msg == ERROR)
-	{
-		response += " 461 ";
-		response += params[0];
-		response += " :Not enough or too much params for ";
-		response += params[0];
-	}
-	else if (msg == BAD_PSSWD)
-	{
-		response += " Bad password, try to reconnect setting password again";
-	}
-	else if (msg == PRIVMSG)
-	{
-		//std::cout << "weepa" << std::endl;
-		//std::cout << launcher->getNick() << std::endl;
-		response = ":";
-		response += launcher->getNick();
-		response += " PRIVMSG " + params[1] +  " :";
-		for (size_t  i = 2; i < params.size(); i++)
-		{
-			response += params[i];
-			response += " ";
-		}
-//		response += "\r\n";
-		//std::cout << response << std::endl;
-		//std::cout << "endofweeepa" << std::endl;
-	}
-	else if (JOIN_OK == msg)
-	{
-		response = ":" + launcher->getNick() + " " + params[0] + " " + params[1];
-	}
-*/
-	
-	//std::cout << "cmdResponse: " << response << std::endl;
 	return (response + "\r\n");
 }
 
@@ -208,7 +142,7 @@ void	Command::handleCmd()
 void	Command::markAction(std::vector<std::string> params)
 {
 	std::string cmd = params[0];
-	std::cout << "Params: {" << std::endl;
+	/*std::cout << "Params: {" << std::endl;
 	for (std::size_t i = 0; i < params.size(); i++)
 	{
 		std::cout << " " << params[i];
@@ -217,6 +151,7 @@ void	Command::markAction(std::vector<std::string> params)
 	//std::cout << cmd << " : " << params.size()<< std::endl;;
 	//std::cout << "iusa" << std::endl;
 	//std::cout << cmd << std::endl;
+	*/
 	if (cmd == "PASS")
 		pass(params);
 	else if (cmd == "NICK")
@@ -276,10 +211,12 @@ void	Command::cap(std::vector<std::string> params)
 	else if (params[1] == "END")
 		launcher->setCommand(CAP_END);
 	
-	response = responseGenerator(launcher->getCommand(), params);
+	markEverything(launcher->getCommand(), params);
+	/*response = responseGenerator(launcher->getCommand(), params);
 	launcher->setResponse(response);
 	launcher->setNCmd(launcher->getCommand());
-	launcher->setPollOut(1);
+	*/
+	//launcher->setPollOut(1);
 	//send(launcher->getSocket(), response.c_str(), response.size(), 0);
 }
 
@@ -354,8 +291,15 @@ void	Command::markEverything(int cmd, std::vector<std::string> params)
 	//launcher->setStatus(ERROR);
 	launcher->setCommand(cmd);
 	response = responseGenerator(launcher->getCommand(), params);
-	launcher->setResponse(response);
-	launcher->setNCmd(launcher->getCommand());
+	std::string isempty = response.substr(1, response.size());
+	std::cout << "ISEMPTY" << std::endl;
+	std::cout << isempty << std::endl;
+	if (isempty != hostName + "\r\n")
+	{
+		std::cout << "a ver " << std::endl;
+		launcher->setResponse(response);
+		launcher->setNCmd(launcher->getCommand());
+	}
 }
 
 int	Command::pass(std::vector<std::string> params)

@@ -60,7 +60,7 @@ private:
 	std::string 	topic;
 	std::string 	id;
 	std::string 	password;
-	int 		maxUsers;
+	unsigned int 	maxUsers;
 	bool		inviteMode;
 	bool		topicRestriction;
 };
