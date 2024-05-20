@@ -25,7 +25,14 @@ Channel::~Channel()
 
 Channel& Channel::operator = (const Channel& src)
 {
-	this->users = src.getUsers();
+	setUsers(src.getUsers());
+	setAdmins(src.getAdmins());
+	setTopic(src.getTopic());
+	setId(src.getId());
+	setPassword(src.getPassword());
+	setUsers(src.getUsers());
+	setInviteMode(src.getInviteMode());
+	setTopicRestriction(src.getTopicRestriction());
 	return *this;
 }
 
