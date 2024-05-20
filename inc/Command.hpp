@@ -38,7 +38,7 @@ class Command
 		int	parseMsg();
 		void	printShait();
 		void	privmsg(std::vector<std::string> params);
-		void	markie(Client *c, std::vector<std::string> params);
+		void	markie(Client *c, std::vector<std::string> params, int cmd);
 		void	markEverything(int cmd, std::vector<std::string> params);
 		void	markEveryThing(str& cmd, vectorStr& params);
 		void	markPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
@@ -46,6 +46,8 @@ class Command
 		void			join(const vectorStr& params, const str& userId);
 		vectorCh::iterator	getChannel(const str& id);
 		int			stringToEnum(const str& str);
+		Client			*findClientByNick(std::string Nick);
+		void			popAllCoincidences(std::vector<std::string> *vec, std::string c);
 };
 
 #endif

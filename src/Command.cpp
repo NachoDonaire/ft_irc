@@ -69,7 +69,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 				response += quitMsg;
 			}
 			break;
-		case(ERROR):
+		case(ERR_NEEDMOREPARAMS):
 			response += " 461 ";
 			response += params[0];
 			response += " :Not enough or too much params for ";
@@ -79,7 +79,8 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
 			break;
 		case(BAD_PSSWD):
-			response += " Bad password, try to reconnect setting password again";
+			response += " 464 " + launcher->getNick() + " :Password incorrect";
+			launcher->setOff(1);
 			break;
 		case(PRIVMSG):
 			response = ":";
@@ -292,11 +293,11 @@ void	Command::markEverything(int cmd, std::vector<std::string> params)
 	launcher->setCommand(cmd);
 	response = responseGenerator(launcher->getCommand(), params);
 	std::string isempty = response.substr(1, response.size());
-	std::cout << "ISEMPTY" << std::endl;
-	std::cout << isempty << std::endl;
+	//std::cout << "ISEMPTY" << std::endl;
+	//std::cout << isempty << std::endl;
 	if (isempty != hostName + "\r\n")
 	{
-		std::cout << "a ver " << std::endl;
+		//std::cout << "a ver " << std::endl;
 		launcher->setResponse(response);
 		launcher->setNCmd(launcher->getCommand());
 	}
@@ -308,7 +309,8 @@ int	Command::pass(std::vector<std::string> params)
 
 	if (params.size() != 2)
 	{
-		markEverything(CMD_ERROR, params);
+		markEverything(ERR_NEEDMOREPARAMS, params);
+		launcher->setPollOut(1);
 		return 3;
 	}
 	launcher->setPsswd(params[1]);
@@ -316,7 +318,13 @@ int	Command::pass(std::vector<std::string> params)
 		markEverything(BAD_PSSWD, params);
 	else
 		markEverything(OK_PSSWD, params);
-	welcome(params);
+	if (launcher->getRegister())
+	{
+		std::cout << "aaa" << std::endl;
+		launcher->setPollOut(1);
+	}
+	else
+		welcome(params);
 	return 0;
 }
 
@@ -325,7 +333,8 @@ int	Command::user(std::vector<std::string> params)
 	std::string response;
 	if (params.size() < 5)
 	{
-		markEverything(ERROR, params);
+		markEverything(ERR_NEEDMOREPARAMS, params);
+		launcher->setPollOut(1);
 		return 3;
 	}
 	launcher->setUser(params[1]);
@@ -340,7 +349,8 @@ int	Command::nick(std::vector<std::string> params)
 
 	if (params.size() != 2)
 	{
-		markEverything(CMD_ERROR, params);
+		markEverything(ERR_NEEDMOREPARAMS, params);
+		launcher->setPollOut(1);
 		return 3;
 	}
 	for (std::vector<Client >::iterator it = clients->begin(); it != clients->end(); it++)
@@ -360,12 +370,58 @@ int	Command::nick(std::vector<std::string> params)
 	return 0;
 }
 
+void	Command::popAllCoincidences(std::vector<std::string> *vec, std::string coincidence)
+{
+	for (std::vector<std::string>::iterator it = vec->begin(); it != vec->end(); it++)
+	{
+		if (*it == coincidence)
+			vec->erase(it);
+	}
+}
+
+Client	*Command::findClientByNick(std::string nick)
+{
+	for (std::vector<Client>::iterator cl = clients->begin(); cl != clients->end(); cl++)
+	{
+		if (cl->getNick() == nick)
+			return &(*cl);
+	}
+	return (&(*clients->end()));
+}
+
 void	Command::quit(std::vector<std::string> params)
 {
 	launcher->setOff(1);
-	markEverything(QUIT, params);
-	
-	launcher->setPollOut(1);
+	std::vector<std::string> sendQuit;
+			std::cout << "BYYYE MAAATE "<< channels->size() <<std::endl;
+
+	for (vectorCh::iterator ch = channels->begin(); ch != channels->end(); ch++)
+	{
+		for (vectorStr::iterator nick = ch->getUsers().begin(); nick != ch->getUsers().end(); nick++)
+		{
+			sendQuit.push_back(*nick);
+		}
+	}
+	for (std::vector<std::string>::iterator nick = sendQuit.begin(); nick != sendQuit.end(); nick++)
+	{
+		Client 		*sendQuitMsg;
+		std::string	response;
+
+		sendQuitMsg = findClientByNick(*nick);
+		if (sendQuitMsg == &(*clients->end()) || sendQuitMsg->getNick() == launcher->getNick()) 
+		{
+			std::cout << "BYYYE MAAATE "<< std::endl;
+			continue ;
+		}
+		std::cout << "HELLO MAAATE " << sendQuitMsg->getNick() << std::endl;
+		popAllCoincidences(&sendQuit, *nick);
+		sendQuitMsg->setNCmd(BLANK);
+		sendQuitMsg->setCommand(QUIT);
+		response = responseGenerator(sendQuitMsg->getCommand(), params);
+		sendQuitMsg->setResponse(response);
+		sendQuitMsg->setPollOut(1);
+	}
+	launcher->setOff(1);
 }
 
 int Command::welcome(std::vector<std::string> params)
@@ -381,11 +437,11 @@ int Command::welcome(std::vector<std::string> params)
 	return (0);
 }
 
-void	Command::markie(Client *c, std::vector<std::string> params)
+void	Command::markie(Client *c, std::vector<std::string> params, int cmd)
 {
 	std::string response;
 
-	c->setCommand(PRIVMSG);
+	c->setCommand(cmd);
 	response = responseGenerator(c->getCommand(), params);
 	c->setResponse(response);
 	c->setNCmd(c->getCommand());
@@ -400,7 +456,7 @@ void	Command::markPollOut(std::vector<Client> *clients, std::vector<std::string>
 		{
 			if (dest[y] == clients->at(i).getNick())
 			{
-				markie(&clients->at(i), params);
+				markie(&clients->at(i), params, PRIVMSG);
 			}
 		}
 	}
@@ -414,7 +470,7 @@ void	Command::privmsg(std::vector<std::string> params)
 	if (params.size() < 3)
 	{
 		//caso de error
-		launcher->setCommand(CMD_ERROR);
+		launcher->setCommand(ERR_NEEDMOREPARAMS);
 		response = responseGenerator(launcher->getCommand(), params);
 		launcher->setResponse(response);
 		launcher->setNCmd(launcher->getCommand());
@@ -436,6 +492,8 @@ void	Command::join(const vectorStr& params, const str& userId)
 	{
 		Channel ch = Channel(name);
 		ch.joinClient(userId, password, true);
+		std::cout << "averaveraveraveraveraveraver" << std::endl;
+		std::cout << ch.getId()<<std::endl;
 		channels->push_back(ch);
 		
 	}
@@ -448,6 +506,11 @@ void	Command::join(const vectorStr& params, const str& userId)
 vectorCh::iterator	Command::getChannel(const str& id)
 {
 	vectorCh::iterator channel = channels->begin();
+	if (channel != channels->end())
+	{
+		std::cout << "ESTA SEEET??" << std::endl;
+		std::cout << channel->getId() << " " << id << std::endl;
+	}
 	while (channel != channels->end() && channel->getId() != id)
 		++channel;
 	return channel;
