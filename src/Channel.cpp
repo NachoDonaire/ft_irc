@@ -29,7 +29,7 @@ Channel& Channel::operator = (const Channel& src)
 	setTopic(src.getTopic());
 	setId(src.getId());
 	setPassword(src.getPassword());
-	setUsers(src.getUsers());
+	setMaxUsers(src.getMaxUsers());
 	setInviteMode(src.getInviteMode());
 	setTopicRestriction(src.getTopicRestriction());
 	return *this;
