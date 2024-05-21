@@ -61,12 +61,17 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			break;
 		case(QUIT):
 			if (params.size() <= 1)
-				response += " QUIT: No leaving message";
+				response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " QUIT";
+				//response += " QUIT: No leaving message";
 			else
 			{
-				std::string quitMsg(&params[1].c_str()[1]);
+				response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " QUIT ";
+				for (size_t i = 1; i < params.size(); i++)
+					response += params[i];
+				/*std::string quitMsg(&params[1].c_str()[1]);
 				response += " QUIT: ";
 				response += quitMsg;
+				*/
 			}
 			break;
 		case(ERR_NEEDMOREPARAMS):
@@ -175,8 +180,8 @@ void	Command::markAction(std::vector<std::string> params)
 	}
 	else if (cmd == "JOIN")
 	{
-		std::cout << "el comando es join" << std::endl;
-		std::cout << "El nick de la clase cliente que ejecuta el join es: " << launcher->getUser() << std::endl;
+		//std::cout << "el comando es join" << std::endl;
+		//std::cout << "El nick de la clase cliente que ejecuta el join es: " << launcher->getUser() << std::endl;
 		int responseType;
 	
 		try
@@ -187,9 +192,11 @@ void	Command::markAction(std::vector<std::string> params)
 		catch(std::exception& e)
 		{
 			responseType = stringToEnum(e.what());
+		//std::cout << launcher->getNick() << "says NoooOOOOOoooOOOO " << e.what() << std::endl;
 		}
 		markEverything(responseType, params);
 		launcher->setPollOut(1);
+		//std::cout << launcher->getNick() << "says eeEEeeEEee" << std::endl;
 	}
 	else if (cmd == "")
 		return ;
@@ -391,24 +398,37 @@ Client	*Command::findClientByNick(std::string nick)
 
 void	Command::quit(std::vector<std::string> params)
 {
-	launcher->setOff(1);
-	std::vector<std::string> sendQuit;
-			std::cout << "BYYYE MAAATE "<< channels->size() <<std::endl;
+	int	i;
 
+	i = 0;
+	launcher->setOff(1);
+	std::vector<std::string> nicks;
+	std::cout << "Channels size when quitting: "<< channels->size() <<std::endl;
+
+
+	/*for (vectorCh::iterator ch = channels->begin(); ch != channels->end(); ch++)
+	{
+		while (i < ch->getUsers().size())
+		{
+			sendQuit.push_back(ch->getUsers()[i++]);
+		}
+		//ch->deleteClient(launcher->getNick());
+	}
 	for (vectorCh::iterator ch = channels->begin(); ch != channels->end(); ch++)
 	{
-		for (vectorStr::iterator nick = ch->getUsers().begin(); nick != ch->getUsers().end(); nick++)
+		while (i < ch->getUsers().size())
 		{
-			sendQuit.push_back(*nick);
+			sendQuit.push_back(ch->getAdmins()[i++]);
 		}
 	}
+	std::cout << "Number of clients to quit: "<< sendQuit.size() <<std::endl;
 	for (std::vector<std::string>::iterator nick = sendQuit.begin(); nick != sendQuit.end(); nick++)
 	{
 		Client 		*sendQuitMsg;
 		std::string	response;
 
 		sendQuitMsg = findClientByNick(*nick);
-		if (sendQuitMsg == &(*clients->end()) || sendQuitMsg->getNick() == launcher->getNick()) 
+		if (sendQuitMsg == &(*clients->end())) //|| sendQuitMsg->getNick() == launcher->getNick()) 
 		{
 			std::cout << "BYYYE MAAATE "<< std::endl;
 			continue ;
@@ -420,8 +440,8 @@ void	Command::quit(std::vector<std::string> params)
 		response = responseGenerator(sendQuitMsg->getCommand(), params);
 		sendQuitMsg->setResponse(response);
 		sendQuitMsg->setPollOut(1);
-	}
-	launcher->setOff(1);
+	}*/
+	//launcher->setOff(1);
 }
 
 int Command::welcome(std::vector<std::string> params)
@@ -448,7 +468,7 @@ void	Command::markie(Client *c, std::vector<std::string> params, int cmd)
 	c->setPollOut(1);
 }
 
-void	Command::markPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params)
+void	Command::markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params)
 {
 	for (size_t y = 0; y < dest.size(); y++)
 	{
@@ -457,6 +477,33 @@ void	Command::markPollOut(std::vector<Client> *clients, std::vector<std::string>
 			if (dest[y] == clients->at(i).getNick())
 			{
 				markie(&clients->at(i), params, PRIVMSG);
+			}
+		}
+	}
+}
+
+void	Command::markChannelPollOut(std::vector<Channel> *ch, std::vector<std::string> dest, std::vector<std::string> params)
+{
+	for (size_t y = 0; y < dest.size(); y++)
+	{
+		for (size_t i = 0; i < ch->size(); i++)
+		{
+			if (dest[y] == ch->at(i).getId())
+			{
+				for  (size_t j = 0; j < ch->at(i).getUsers().size(); j++)
+				{
+					if (findClientByNick(ch->at(i).getUsers().at(j))->getNick() == launcher->getNick())
+						continue ;
+					Client *cl = findClientByNick(ch->at(i).getUsers().at(j));
+					markie(cl, params, PRIVMSG);
+				}
+				for  (size_t j = 0; j < ch->at(i).getAdmins().size(); j++)
+				{
+					if (findClientByNick(ch->at(i).getAdmins().at(j))->getNick() == launcher->getNick())
+						continue ;
+					Client *cl = findClientByNick(ch->at(i).getAdmins().at(j));
+					markie(cl, params, PRIVMSG);
+				}
 			}
 		}
 	}
@@ -479,7 +526,8 @@ void	Command::privmsg(std::vector<std::string> params)
 	}
 	//caso respuesta valida
 	dest = split(params[1], ",");
-	markPollOut(clients, dest, params);
+	markClientsPollOut(clients, dest, params);
+	markChannelPollOut(channels, dest, params);
 }
 
 void	Command::join(const vectorStr& params, const str& userId)
@@ -487,13 +535,14 @@ void	Command::join(const vectorStr& params, const str& userId)
 	std::cout << "params 1 : " << params[1] << std::endl;
 	str name = params[1];
 	str password = (params.size() == 3) ? params[2] : "";  
+	//std::cout << "CHANNEL PSSWD : " << password << std::endl;
 	vectorCh::iterator channel = getChannel(name);
 	if (channel == channels->end())
 	{
 		Channel ch = Channel(name);
 		ch.joinClient(userId, password, true);
-		std::cout << "averaveraveraveraveraveraver" << std::endl;
-		std::cout << ch.getId()<<std::endl;
+		//std::cout << "averaveraveraveraveraveraver" << std::endl;
+		//std::cout << ch.getId()<<std::endl;
 		channels->push_back(ch);
 		
 	}
@@ -506,11 +555,11 @@ void	Command::join(const vectorStr& params, const str& userId)
 vectorCh::iterator	Command::getChannel(const str& id)
 {
 	vectorCh::iterator channel = channels->begin();
-	if (channel != channels->end())
+/*	if (channel != channels->end())
 	{
 		std::cout << "ESTA SEEET??" << std::endl;
 		std::cout << channel->getId() << " " << id << std::endl;
-	}
+	}*/
 	while (channel != channels->end() && channel->getId() != id)
 		++channel;
 	return channel;

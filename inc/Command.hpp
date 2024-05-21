@@ -41,7 +41,8 @@ class Command
 		void	markie(Client *c, std::vector<std::string> params, int cmd);
 		void	markEverything(int cmd, std::vector<std::string> params);
 		void	markEveryThing(str& cmd, vectorStr& params);
-		void	markPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
+		void	markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
+		void	markChannelPollOut(std::vector<Channel> *clients, std::vector<std::string> dest, std::vector<std::string> params);
 		/* Channel */
 		void			join(const vectorStr& params, const str& userId);
 		vectorCh::iterator	getChannel(const str& id);
