@@ -22,6 +22,11 @@ int main(int argc, char **argv)
 	}
 	std::string hostname("tuckerson.tuki.com");
 	Server	irc(argv[1], argv[2], hostname);
+	if (irc.getPortError())
+	{
+		std::cerr << "port must be entirely a number" << std::endl;
+		return 1;
+	}
 
 	if (irc.launchServer() != 0)
 		return 1;

@@ -12,8 +12,10 @@ Channel::Channel(const Channel& src)
 	*this = src;
 }
 
-Channel::Channel(const str& id): users(0), admins(0), topic(""), id(id), password(""), maxUsers(-1), inviteMode(false), topicRestriction(false)
+Channel::Channel(const str& id): users(0), admins(0), topic(""), password(""), inviteMode(false), topicRestriction(false)
 {
+	this->setId(id);
+	maxUsers = (unsigned int)MAX_USERS_PER_CHANNEL;
 
 }
 
@@ -24,7 +26,7 @@ Channel::~Channel()
 
 Channel& Channel::operator = (const Channel& src)
 {
-	setUsers(src.getUsers());
+	this->users = src.getUsers();
 	setAdmins(src.getAdmins());
 	setTopic(src.getTopic());
 	setId(src.getId());
@@ -131,7 +133,10 @@ void 	Channel::joinClient(vectorStr& users, const str& userId, const bool& isAdm
 		throw std::logic_error("Provide a valid userId to join to the Channel.");
 	if (users.size() + admins.size() >= maxUsers && maxUsers >= 0)
 		//throw std::logic_error("The Channel is full");
+	{
+		std::cout << " a ver cuantos users y admins hay : " << users.size() + admins.size() << " frente a " << maxUsers << std::endl;
 		throw std::logic_error("ERR_CHANNELISFULL");
+	}
 	vectorStr::iterator user = findUser(users, userId);
 	//El client no manda mensaje si el usuario ya está en el canal
 	//revisar si se pasan varios canales y el usuario ya está en uno que hace el cliente 
@@ -148,6 +153,7 @@ void	Channel::deleteClient(vectorStr& users, const str& userId)
 		user = findUser(admins, userId);
 	if (user == admins.end())
 		throw std::logic_error("The userId wasn't find in the Channel");
+	//que  sucede si no esta en users si no en admins??
 	users.erase(user);
 }
 

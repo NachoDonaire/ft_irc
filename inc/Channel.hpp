@@ -4,6 +4,7 @@
 #include <string>
 typedef std::vector<std::string> 	vectorStr;
 typedef std::string 			str;
+#define MAX_USERS_PER_CHANNEL		23
 
 class Channel
 {
@@ -60,7 +61,7 @@ private:
 	std::string 	topic;
 	std::string 	id;
 	std::string 	password;
-	int 		maxUsers;
+	unsigned int 	maxUsers;
 	bool		inviteMode;
 	bool		topicRestriction;
 };

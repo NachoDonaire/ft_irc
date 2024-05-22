@@ -13,6 +13,7 @@ class Server
 		std::string	psswd;
 		std::string	hostName;
 		int		currentSize;
+		int		portError;
 		char 		recData[512];
 		struct addrinfo	*rp;
 		std::vector<struct pollfd>	clientSock;
@@ -32,6 +33,7 @@ class Server
 		void		mark(Client *c, std::string msg);
 		void		handleMessages();
 		void		printClientSock();
+		int		getPortError() {return this->portError; } ;
 		bool		handleConnections();
 		std::vector<Client>		*getClients() { return &this->clients; };
 		/*Channel*/

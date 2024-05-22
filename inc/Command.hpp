@@ -23,12 +23,12 @@ class Command
     		~Command();
     		Command();
 		Command& operator=(const Command&);
-		int	cmdAnalyzer(std::string cmd);
 		std::vector<std::string>	split(std::string, const char *c);
 		void	markAction(std::vector<std::string> params);
 		std::map<int, std::vector<std::string> >	getCmd() { return this->cmd;};
 		int	pass(std::vector<std::string> params);
 		void	cap(std::vector<std::string> params);
+		void	who(std::vector<std::string> params);
 		int	nick(std::vector<std::string> params);
 		int	user(std::vector<std::string> params);
 		void	quit(std::vector<std::string> params);
@@ -38,14 +38,18 @@ class Command
 		int	parseMsg();
 		void	printShait();
 		void	privmsg(std::vector<std::string> params);
-		void	markie(Client *c, std::vector<std::string> params);
+		void	markie(Client *c, std::vector<std::string> params, int cmd);
 		void	markEverything(int cmd, std::vector<std::string> params);
 		void	markEveryThing(str& cmd, vectorStr& params);
-		void	markPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
+		void	markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
+		void	markChannelPollOut(std::vector<Channel> *clients, std::vector<std::string> dest, std::vector<std::string> params);
 		/* Channel */
-		void			join(const vectorStr& params, const str& userId);
-		vectorCh::iterator	getChannel(const str& id);
-		int			stringToEnum(const str& str);
+		void				join(const vectorStr& params, const str& userId);
+		vectorCh::iterator		getChannel(const str& id);
+		int				stringToEnum(const str& str);
+		Client				*findClientByNick(std::string Nick);
+		void				popAllCoincidences(std::vector<std::string> *vec, std::string c);
+		std::vector<std::string>	getChannelNicks(Channel ch);
 };
 
 #endif

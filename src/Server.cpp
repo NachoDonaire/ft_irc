@@ -26,15 +26,17 @@ Server::Server(char *p, char *pd, std::string hn) : port(p)
 	psswd = std::string(pd);
 	port = std::string(p);
 	hostName = hn;
-	
-	// 1 para el listener
-	//this->clientSock = (struct pollfd *)malloc(sizeof(pollfd));
-	//this->clientSock[1].fd = POLLFD_LIMIT;
+	portError = 0;
+	for (std::string::iterator c = port.begin(); c != port.end(); c++)
+	{
+		if (!std::isdigit(*c))
+		{
+			portError = 1;
+			return ;
+		}
+	}
 	currentSize = 1;
-	//currentSize = pollfdLen();
 	std::cout << "CURRENT SIZE AT CONSTRUCTOR" << currentSize <<std::endl;
-	//clients.push_back(Client(clientSock[currentSize].fd, currentSize, psswd, hostName));
-	//commands["PASS"] = &Server::pass;
 }	
 
 bool	Server::launchServer()
@@ -120,6 +122,14 @@ void	Server::checkClientEvents()
 	pos = 0;
 	for (std::vector<struct pollfd>::iterator it = clientSock.begin() + 1; it != clientSock.end(); it++)
 	{
+		if (sit->getOff() == 1)
+		{
+			std::cout << "OOOJ" << std::endl;
+			out.push_back(pos);
+			pos++;
+			sit++;
+			continue ;
+		}
 		if (it->revents & (POLLHUP | POLLERR | POLLNVAL))
 		{
 			std::cerr << "client hang, quiting this client" << std::endl;
@@ -146,12 +156,14 @@ void	Server::checkClientEvents()
 
 			for(std::vector<std::string>::iterator r = responses.begin(); r != responses.end(); r++)
 			{
+				std::cout << "RESPONSE" << std::endl;
 				std::cout << *r << std::endl;
 				send(sit->getSocket(), r->c_str(), r->size(), 0);
-				if (*ncmdit == BAD_PSSWD || *ncmdit == QUIT)
+				/*if (*ncmdit == BAD_PSSWD) //|| *ncmdit == QUIT)
 				{
+					std::cout << "OOOJ" << std::endl;
 					out.push_back(pos);
-				}
+				}*/
 				ncmdit++;
 				//pos++;
 			}
@@ -166,6 +178,7 @@ void	Server::checkClientEvents()
 	std::vector<struct pollfd>::iterator pfd = clientSock.begin();
 	for (std::vector<int>::iterator it = out.begin(); it != out.end(); it++)
 	{
+		std::cout << "GULIII" << std::endl;
 		clientSock.erase(pfd + ((*it) + 1));
 		clients.erase(cl + (*it));
 	}
@@ -241,7 +254,6 @@ bool	Server::handleConnections()
 
 Server::~Server()
 {
-	std::cout << "alo" << std::endl;
 }
 
 
