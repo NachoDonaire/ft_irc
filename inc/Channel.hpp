@@ -5,7 +5,6 @@
 typedef std::vector<std::string> 	vectorStr;
 typedef std::string 			str;
 #define MAX_USERS_PER_CHANNEL		23
-//provisional pero no me jodas, como que a  -1?????? 
 
 class Channel
 {

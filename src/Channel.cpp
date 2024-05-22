@@ -154,6 +154,7 @@ void	Channel::deleteClient(vectorStr& users, const str& userId)
 		user = findUser(admins, userId);
 	if (user == admins.end())
 		throw std::logic_error("The userId wasn't find in the Channel");
+	//que  sucede si no esta en users si no en admins??
 	users.erase(user);
 }
 

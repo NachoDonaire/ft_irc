@@ -54,10 +54,22 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += "";
 			break;
 		case(NICK_OK):
-			response += " 381 " + launcher->getNick() + " :Nick " + launcher->getNick() + " magnificent set!";
+			if (launcher->getNick() == "")
+			{
+				launcher->setNick(params[1]);
+				response += " 381 " + launcher->getNick() + " :Nick " + launcher->getNick() + " magnificent set!";
+			}
+			else
+			{
+				response = ":" + launcher->getNick() + " NICK " + params[1];
+				launcher->setNick(params[1]);
+			}
 			break;
 		case(NICK_REPEATED):
 			response += " 433 * " + params[1] + " :Nickname is already in use.";
+			break;
+		case(ERR_ERRONEUSNICKNAME):
+			response += " 432 " + launcher->getUser() + " " + params[1];
 			break;
 		case(QUIT):
 			if (params.size() <= 1)
@@ -96,6 +108,9 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 				response += params[i];
 				response += " ";
 			}
+			break;
+		case(WHO):
+			response += " 352 " + launcher->getNick();//<canal> <usuario> <host> <servidor> <nick> <flags> :<hopcount> <real name>
 			break;
 		case(JOIN_OK):
 			response = ":" + launcher->getNick() + " " + params[0] + " " + params[1];
@@ -198,6 +213,8 @@ void	Command::markAction(std::vector<std::string> params)
 		launcher->setPollOut(1);
 		//std::cout << launcher->getNick() << "says eeEEeeEEee" << std::endl;
 	}
+	else if (cmd == "WHO")
+		who(params);
 	else if (cmd == "")
 		return ;
 	else
@@ -210,10 +227,14 @@ void	Command::markAction(std::vector<std::string> params)
 */
 }
 
+void	Command::who(std::vector<std::string> params)
+{
+	markEverything(WHO, params);
+	launcher->setPollOut(1);
+}
+
 void	Command::cap(std::vector<std::string> params)
 {
-	std::string response;
-
 	if (params[1] == "LS")
 		launcher->setCommand(CAP_LS);
 	else if (params[1] == "END")
@@ -255,21 +276,6 @@ std::vector<std::string> Command::split(std::string na, const char *c)
 		}
 	}
 	return tokens;
-}
-
-int Command::cmdAnalyzer(std::string cmd)
-{
-	if (cmd == "PASS")
-		return 0;
-	else if (cmd == "CAP")
-		return 0;
-	else if (cmd == "LS")
-		return 0;
-	else if (cmd == "NICK")
-		return 0;
-	else if (cmd == "USER")
-		return 0;
-	return 1;
 }
 
 int Command::parseMsg()
@@ -327,7 +333,7 @@ int	Command::pass(std::vector<std::string> params)
 		markEverything(OK_PSSWD, params);
 	if (launcher->getRegister())
 	{
-		std::cout << "aaa" << std::endl;
+		//std::cout << "aaa" << std::endl;
 		launcher->setPollOut(1);
 	}
 	else
@@ -360,6 +366,12 @@ int	Command::nick(std::vector<std::string> params)
 		launcher->setPollOut(1);
 		return 3;
 	}
+	if (params[1].size() > 9)
+	{
+		markEverything(ERR_ERRONEUSNICKNAME, params);
+		launcher->setPollOut(1);
+		return 3;
+	}
 	for (std::vector<Client >::iterator it = clients->begin(); it != clients->end(); it++)
 	{
 		if ((*it).getNick() == params[1])
@@ -370,8 +382,11 @@ int	Command::nick(std::vector<std::string> params)
 			return 2;
 		}
 	}
-	launcher->setNick(params[1]);
+	//if (launcher->getRegister() == 0)
+	//	launcher->setNick(params[1]);
 	markEverything(NICK_OK, params);
+	//if (launcher->getRegister() == 1)
+	//	launcher->setNick(params[1]);
 	launcher->setPollOut(1);
 	welcome(params);
 	return 0;
@@ -482,8 +497,26 @@ void	Command::markClientsPollOut(std::vector<Client> *clients, std::vector<std::
 	}
 }
 
+std::vector<std::string>	Command::getChannelNicks(Channel ch)
+{
+	std::vector<std::string> nicks;
+
+	for  (size_t j = 0; j < ch.getUsers().size(); j++)
+	{
+		nicks.push_back(ch.getUsers().at(j));
+	}
+	for  (size_t j = 0; j < ch.getAdmins().size(); j++)
+	{
+		nicks.push_back(ch.getAdmins().at(j));
+	}
+	return nicks;
+}
+
+
+
 void	Command::markChannelPollOut(std::vector<Channel> *ch, std::vector<std::string> dest, std::vector<std::string> params)
 {
+	std::cout << "es aqui de calle" << std::endl;
 	for (size_t y = 0; y < dest.size(); y++)
 	{
 		for (size_t i = 0; i < ch->size(); i++)
@@ -492,21 +525,24 @@ void	Command::markChannelPollOut(std::vector<Channel> *ch, std::vector<std::stri
 			{
 				for  (size_t j = 0; j < ch->at(i).getUsers().size(); j++)
 				{
-					if (findClientByNick(ch->at(i).getUsers().at(j))->getNick() == launcher->getNick())
-						continue ;
+					//if (findClientByNick(ch->at(i).getUsers().at(j))->getNick() == launcher->getNick())
+					//	continue ;
 					Client *cl = findClientByNick(ch->at(i).getUsers().at(j));
-					markie(cl, params, PRIVMSG);
+					if (cl)
+						markie(cl, params, PRIVMSG);
 				}
 				for  (size_t j = 0; j < ch->at(i).getAdmins().size(); j++)
 				{
-					if (findClientByNick(ch->at(i).getAdmins().at(j))->getNick() == launcher->getNick())
-						continue ;
+					//if (findClientByNick(ch->at(i).getAdmins().at(j))->getNick() == launcher->getNick())
+					//	continue ;
 					Client *cl = findClientByNick(ch->at(i).getAdmins().at(j));
-					markie(cl, params, PRIVMSG);
+					if (cl)
+						markie(cl, params, PRIVMSG);
 				}
 			}
 		}
 	}
+	std::cout << "pero de calle" << std::endl;
 }
 
 void	Command::privmsg(std::vector<std::string> params)
