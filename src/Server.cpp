@@ -26,15 +26,17 @@ Server::Server(char *p, char *pd, std::string hn) : port(p)
 	psswd = std::string(pd);
 	port = std::string(p);
 	hostName = hn;
-	
-	// 1 para el listener
-	//this->clientSock = (struct pollfd *)malloc(sizeof(pollfd));
-	//this->clientSock[1].fd = POLLFD_LIMIT;
+	portError = 0;
+	for (std::string::iterator c = port.begin(); c != port.end(); c++)
+	{
+		if (!std::isdigit(*c))
+		{
+			portError = 1;
+			return ;
+		}
+	}
 	currentSize = 1;
-	//currentSize = pollfdLen();
 	std::cout << "CURRENT SIZE AT CONSTRUCTOR" << currentSize <<std::endl;
-	//clients.push_back(Client(clientSock[currentSize].fd, currentSize, psswd, hostName));
-	//commands["PASS"] = &Server::pass;
 }	
 
 bool	Server::launchServer()
@@ -252,7 +254,6 @@ bool	Server::handleConnections()
 
 Server::~Server()
 {
-	std::cout << "alo" << std::endl;
 }
 
 
