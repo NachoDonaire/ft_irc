@@ -12,7 +12,7 @@ Channel::Channel(const Channel& src)
 	*this = src;
 }
 
-Channel::Channel(const str& id): users(0), admins(0), topic(""), password(""), inviteMode(false), topicRestriction(false)
+Channel::Channel(const std::string id): users(0), admins(0), topic(""), password(""), inviteMode(false), topicRestriction(false)
 {
 	this->setId(id);
 	maxUsers = (unsigned int)MAX_USERS_PER_CHANNEL;
@@ -117,7 +117,7 @@ void	Channel::setTopicRestriction(const bool& src)
 	this->topicRestriction = src;
 }
 
-void	Channel::joinClient(const str& userId, const str& password, const bool& isAdmin)
+void	Channel::joinClient(std::string* userId, const std::string password, const bool& isAdmin)
 {
 	if (password != this->password)
 		//throw std::logic_error("The password provided is not valid for the channel");
@@ -127,14 +127,36 @@ void	Channel::joinClient(const str& userId, const str& password, const bool& isA
 	else
 		joinClient(admins, userId, isAdmin);
 }
-void 	Channel::joinClient(vectorStr& users, const str& userId, const bool& isAdmin)
+
+void	Channel::printAdminUsers() const
 {
-	if (userId == "")
+
+	std::cout << "users : ";
+	std::vector<std::string *>::const_iterator user = users.begin();
+	while (user != users.end())
+	{
+		std::cout << **user << std::endl;
+		user++;
+	}
+	std::cout << "admins: ";
+	vectorStr::const_iterator admin = admins.begin();
+	while (admin != this->admins.end())
+	{
+		std::cout << **admin << std::endl;
+		admin++;
+	}
+	std::cout << std::endl;
+}
+	
+
+void 	Channel::joinClient(vectorStr& users, std::string *userId, const bool& isAdmin)
+{
+	if (*userId == "")
 		throw std::logic_error("Provide a valid userId to join to the Channel.");
 	if (users.size() + admins.size() >= maxUsers && maxUsers >= 0)
 		//throw std::logic_error("The Channel is full");
 	{
-		std::cout << " a ver cuantos users y admins hay : " << users.size() + admins.size() << " frente a " << maxUsers << std::endl;
+		//std::cout << " a ver cuantos users y admins hay : " << users.size() + admins.size() << " frente a " << maxUsers << std::endl;
 		throw std::logic_error("ERR_CHANNELISFULL");
 	}
 	vectorStr::iterator user = findUser(users, userId);
@@ -144,9 +166,11 @@ void 	Channel::joinClient(vectorStr& users, const str& userId, const bool& isAdm
 		throw std::logic_error("The user is already in the Channel");
 
 	isAdmin ? admins.push_back(userId) : users.push_back(userId);
+	std::cout << "JOIN CLIENT" << std::endl;
+	printAdminUsers();
 }
 
-void	Channel::deleteClient(vectorStr& users, const str& userId)
+void	Channel::deleteClient(vectorStr& users, const std::string* userId)
 {
 	vectorStr::iterator user = findUser(users, userId);
 	if (user == users.end())
@@ -157,7 +181,7 @@ void	Channel::deleteClient(vectorStr& users, const str& userId)
 	users.erase(user);
 }
 
-void	Channel::deleteClient(const str& userId)
+void	Channel::deleteClient(const std::string* userId)
 {
 	try
 	{
@@ -169,15 +193,20 @@ void	Channel::deleteClient(const str& userId)
 	}
 }
 
-vectorStr::iterator	Channel::findUser(vectorStr& users, const str& userId) const
+vectorStr::iterator	Channel::findUser(vectorStr& users, const std::string* userId)
 {
 	vectorStr::iterator user = users.begin();
-	while (user != users.end() && *user != userId)
+	std::cout << "FINDUSER" << std::endl;
+	while (user != users.end() && **user != *userId)
+	{
+		std::cout << **user << std::endl;
 		user++;
+	}
+	this->printAdminUsers();
 	return user;
 }
 
-void	Channel::checkInvite(const str& senderId)
+void	Channel::checkInvite(const std::string* senderId)
 {
 	vectorStr::iterator sender = findUser(admins, senderId);
 	if (sender == admins.end())
@@ -190,7 +219,7 @@ void	Channel::checkInvite(const str& senderId)
 	//if the invite can be done, the function doesn't throw any exception
 }
 
-void	Channel::changeTopic(const str& userId, const str& value)
+void	Channel::changeTopic(const std::string* userId, const std::string value)
 {
 	vectorStr::iterator user = findUser(admins, userId);
 	if (topicRestriction == true && user == admins.end())
@@ -200,21 +229,21 @@ void	Channel::changeTopic(const str& userId, const str& value)
 	this->topic = value;
 }
 
-void	Channel::changeInviteMode(const str& userId, const bool& value)
+void	Channel::changeInviteMode(const std::string* userId, const bool& value)
 {
 	if (findUser(admins, userId) == admins.end())
 		throw std::logic_error("The user need to be an operator of the Cannel.");
 	this->inviteMode = value;
 }
 
-void	Channel::changePassword(const str& userId, const str& newPassword)
+void	Channel::changePassword(const std::string* userId, const std::string newPassword)
 {
 	if (findUser(admins, userId) == admins.end())
 		throw std::logic_error("The user need to be an operator of the Cannel.");
 	this->password = newPassword;
 }
 
-bool	Channel::isRegister(str& userId)
+bool	Channel::isRegister(std::string* userId)
 {
 	vectorStr::iterator user = findUser(users, userId);
 	if (user == users.end())

@@ -44,12 +44,12 @@ class Command
 		void	markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
 		void	markChannelPollOut(std::vector<Channel> *clients, std::vector<std::string> dest, std::vector<std::string> params);
 		/* Channel */
-		void				join(const vectorStr& params, const str& userId);
+		void				join(const std::vector<std::string>& params, str* userId);
 		vectorCh::iterator		getChannel(const str& id);
 		int				stringToEnum(const str& str);
 		Client				*findClientByNick(std::string Nick);
 		void				popAllCoincidences(std::vector<std::string> *vec, std::string c);
-		std::vector<std::string>	getChannelNicks(Channel ch);
+		//std::vector<std::string>	getChannelNicks(Channel ch);
 };
 
 #endif

@@ -13,6 +13,7 @@ Command::Command(Client *l, std::vector<Client> *cl, std::string hostN, std::str
 	hostName = hostN;
 	launcher = l;
 	channels = serverChannels;
+	//std::cout << "pero toocho" << std::endl;
 }
 
 //printea informacion relativa a la clase. launcher es el cliente que lanza el comando y tiene una funcion analoga
@@ -155,7 +156,9 @@ void	Command::handleCmd()
 				std::cout << *y << std::endl;
 				*/
 		}
+	std::cout << "pero toocho" << std::endl;
 		markAction(params);
+	//std::cout << "de cojones" << std::endl;
 		params.clear();
 	}
 }
@@ -201,12 +204,16 @@ void	Command::markAction(std::vector<std::string> params)
 	
 		try
 		{
-			join(params, launcher->getNick());
+
+			std::string &nick = launcher->getNick();
+			join(params, &nick);
 			responseType = JOIN_OK;
 		}
 		catch(std::exception& e)
 		{
 			responseType = stringToEnum(e.what());
+			//std::cout << "gepasaaquiiii" << std::endl;
+			std::cout << e.what() << std::endl;
 		//std::cout << launcher->getNick() << "says NoooOOOOOoooOOOO " << e.what() << std::endl;
 		}
 		markEverything(responseType, params);
@@ -278,6 +285,7 @@ std::vector<std::string> Command::split(std::string na, const char *c)
 	return tokens;
 }
 
+//aver que hacer con mas de 512 bytes
 int Command::parseMsg()
 {
 	std::vector<std::string> tokens;
@@ -360,6 +368,7 @@ int	Command::nick(std::vector<std::string> params)
 {
 	std::string response;
 
+	//std::cout << "algo sucede lalalala" << std::endl;
 	if (params.size() != 2)
 	{
 		markEverything(ERR_NEEDMOREPARAMS, params);
@@ -413,9 +422,6 @@ Client	*Command::findClientByNick(std::string nick)
 
 void	Command::quit(std::vector<std::string> params)
 {
-	int	i;
-
-	i = 0;
 	launcher->setOff(1);
 	std::vector<std::string> nicks;
 	std::cout << "Channels size when quitting: "<< channels->size() <<std::endl;
@@ -497,6 +503,7 @@ void	Command::markClientsPollOut(std::vector<Client> *clients, std::vector<std::
 	}
 }
 
+/*
 std::vector<std::string>	Command::getChannelNicks(Channel ch)
 {
 	std::vector<std::string> nicks;
@@ -511,7 +518,7 @@ std::vector<std::string>	Command::getChannelNicks(Channel ch)
 	}
 	return nicks;
 }
-
+*/
 
 
 void	Command::markChannelPollOut(std::vector<Channel> *ch, std::vector<std::string> dest, std::vector<std::string> params)
@@ -525,17 +532,17 @@ void	Command::markChannelPollOut(std::vector<Channel> *ch, std::vector<std::stri
 			{
 				for  (size_t j = 0; j < ch->at(i).getUsers().size(); j++)
 				{
-					//if (findClientByNick(ch->at(i).getUsers().at(j))->getNick() == launcher->getNick())
-					//	continue ;
-					Client *cl = findClientByNick(ch->at(i).getUsers().at(j));
+					if (*(ch->at(i).getUsers().at(j)) == launcher->getNick())
+						continue ;
+					Client *cl = findClientByNick(*(ch->at(i).getUsers().at(j)));
 					if (cl)
 						markie(cl, params, PRIVMSG);
 				}
 				for  (size_t j = 0; j < ch->at(i).getAdmins().size(); j++)
 				{
-					//if (findClientByNick(ch->at(i).getAdmins().at(j))->getNick() == launcher->getNick())
-					//	continue ;
-					Client *cl = findClientByNick(ch->at(i).getAdmins().at(j));
+					if (*(ch->at(i).getAdmins().at(j)) == launcher->getNick())
+						continue ;
+					Client *cl = findClientByNick(*(ch->at(i).getAdmins().at(j)));
 					if (cl)
 						markie(cl, params, PRIVMSG);
 				}
@@ -566,7 +573,7 @@ void	Command::privmsg(std::vector<std::string> params)
 	markChannelPollOut(channels, dest, params);
 }
 
-void	Command::join(const vectorStr& params, const str& userId)
+void	Command::join(const std::vector<std::string>& params, str* userId)
 {
 	std::cout << "params 1 : " << params[1] << std::endl;
 	str name = params[1];

@@ -2,7 +2,7 @@
 #define CLIENT_HPP
 
 #include <Ircsrv.hpp>
-typedef std::vector<std::string> 	vectorStr;
+typedef std::vector<std::string *> 	vectorStr;
 typedef std::string 			str;
 
 enum status {
@@ -100,7 +100,8 @@ class Client
 		std::string getUser() { return this->username;};
 		int getId() { return this->id;};
 		//std::map<int, std::vector<std::string> >	getParams() { return this->params; };
-		std::string getNick() { return this->nickname;};
+		//std::string *getNickPtr() { return this->nickname;};
+		std::string &getNick() { return (this->nickname);};
 		int	getSocket() { return this->fd;};
 		std::vector<std::string> getCommands() { return this->commands;};
 		void	emptyResponse() { this->responses.clear(); };
