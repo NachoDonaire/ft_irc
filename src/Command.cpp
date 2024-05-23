@@ -125,6 +125,10 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			break;
 		case(ERR_CHANNELISFULL):
 			break;
+		case(NOT_REGISTERED):
+			response += " 451 * :You have not registered";
+			break;
+
 	}
 	return (response + "\r\n");
 }
@@ -198,12 +202,22 @@ void	Command::markAction(std::vector<std::string> params)
 	else if (cmd == "PRIVMSG")
 	{
 		//std::cout << "comienza" << std::endl;
+		if (!launcher->getRegister())
+		{
+			notRegistered(params);
+			return ;
+		}
 		privmsg(params);
 	}
 	else if (cmd == "JOIN")
 	{
 		//std::cout << "el comando es join" << std::endl;
 		//std::cout << "El nick de la clase cliente que ejecuta el join es: " << launcher->getUser() << std::endl;
+		if (!launcher->getRegister())
+		{
+			notRegistered(params);
+			return ;
+		}
 		int responseType;
 	
 		try
@@ -223,17 +237,35 @@ void	Command::markAction(std::vector<std::string> params)
 		//std::cout << launcher->getNick() << "says eeEEeeEEee" << std::endl;
 	}
 	else if (cmd == "WHO")
+	{
+		if (!launcher->getRegister())
+		{
+			notRegistered(params);
+			return ;
+		}
 		who(params);
+	}
 	else if (cmd == "")
 		return ;
 	else
 	{
+		if (!launcher->getRegister())
+		{
+			notRegistered(params);
+			return ;
+		}
 		markEverything(CMD_NOTFOUND, params);
 		launcher->setPollOut(1);
 		//launcher->setCommand(CMD_NOTFOUND);
 	}
 /*
 */
+}
+
+void	Command::notRegistered(std::vector<std::string> params)
+{
+	markEverything(NOT_REGISTERED, params);
+	launcher->setPollOut(1);
 }
 
 void	Command::who(std::vector<std::string> params)

@@ -33,6 +33,7 @@ class Command
 		int	user(std::vector<std::string> params);
 		void	quit(std::vector<std::string> params);
 		void	handleCmd();
+		void	notRegistered(std::vector<std::string>);
 		std::string responseGenerator(int msg, std::vector<std::string> params);
 		int	welcome(std::vector<std::string> params);
 		int	parseMsg();
