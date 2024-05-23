@@ -110,8 +110,12 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 				response += " ";
 			}
 			break;
-		case(WHO):
-			response += " 352 " + launcher->getNick();//<canal> <usuario> <host> <servidor> <nick> <flags> :<hopcount> <real name>
+		case(WHO_BEGIN):
+			response += " 352 " + launcher->getNick() + " " + params[1] + " " +  launcher->getUser() + " " +  hostName + " " +  launcher->getNick() + " H :0 " + launcher->getUser();// <flags> :<hopcount> <real name>
+															break;
+														case(WHO_END):
+			response += " 315 " + launcher->getNick() + " " + params[1] + " :End of list";
+
 			break;
 		case(JOIN_OK):
 			response = ":" + launcher->getNick() + " " + params[0] + " " + params[1];
@@ -156,7 +160,7 @@ void	Command::handleCmd()
 				std::cout << *y << std::endl;
 				*/
 		}
-	std::cout << "pero toocho" << std::endl;
+	//std::cout << "pero toocho" << std::endl;
 		markAction(params);
 	//std::cout << "de cojones" << std::endl;
 		params.clear();
@@ -204,9 +208,7 @@ void	Command::markAction(std::vector<std::string> params)
 	
 		try
 		{
-
-			std::string &nick = launcher->getNick();
-			join(params, &nick);
+			join(params, &launcher->getNick());
 			responseType = JOIN_OK;
 		}
 		catch(std::exception& e)
@@ -236,7 +238,8 @@ void	Command::markAction(std::vector<std::string> params)
 
 void	Command::who(std::vector<std::string> params)
 {
-	markEverything(WHO, params);
+	markEverything(WHO_BEGIN, params);
+	markEverything(WHO_END, params);
 	launcher->setPollOut(1);
 }
 
