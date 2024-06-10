@@ -94,6 +94,8 @@ void	Channel::setTopic(str src)
 
 void	Channel::setId(str src)
 {
+	if (parseChannelId(src) != 1)
+		throw std::logic_error("ERR_BADCHANNELID");
 	this->id = src;
 }
 
@@ -250,3 +252,28 @@ bool	Channel::isRegister(std::string* userId)
 		user = findUser(admins, userId);
 	return (user != admins.end());
 }
+
+std::string	Channel::nameAdmin(std::string admin)
+{
+	for (std::vector<std::string *>::iterator i = admins.begin(); i != admins.end(); i++)
+	{
+		if (admin == **i)
+			return ("@" + **i);
+	}
+	return ("");
+}
+
+int	Channel::parseChannelId(str src) const
+{
+	size_t	pos;
+
+	pos = 0;
+	while (pos < src.size())
+	{
+		if (src[pos] == '\a' || src[pos] == '\b' || src[pos] == '\r' || src[pos] == '\n')
+			return (0);
+		pos++;
+	}
+	return (1);
+}
+

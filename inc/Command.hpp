@@ -30,10 +30,11 @@ class Command
 		void	cap(std::vector<std::string> params);
 		void	who(std::vector<std::string> params);
 		int	nick(std::vector<std::string> params);
+		int	parseNick(std::string);
 		int	user(std::vector<std::string> params);
 		void	quit(std::vector<std::string> params);
 		void	handleCmd();
-		void	notRegistered(std::vector<std::string>);
+		void	notRegistered(std::vector<std::string> nick);
 		std::string responseGenerator(int msg, std::vector<std::string> params);
 		int	welcome(std::vector<std::string> params);
 		int	parseMsg();

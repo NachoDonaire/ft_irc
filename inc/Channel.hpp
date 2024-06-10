@@ -37,12 +37,14 @@ public:
 	//Check if the user is in the channel
 	bool isRegister(std::string* userId);
 
+	std::string	nameAdmin(std::string admin);
 	vectorStr	getUsers() const;
 	vectorStr	getAdmins() const;
 	str		getTopic() const;
 	str		getId() const;
 	str		getPassword() const;
 	int 		getMaxUsers() const;
+	int 		parseChannelId(str src) const;
 	bool 		getInviteMode() const;
 	bool		getTopicRestriction() const;
 
