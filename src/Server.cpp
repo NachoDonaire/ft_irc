@@ -145,6 +145,7 @@ void	Server::checkClientEvents()
 				out.push_back(pos);
 			}
 			this->recData[nread] = '\0';
+			std::cout << "MSG" << std::endl;
 			std::cout << recData << std::endl;
 			sit->setMsg(this->recData);
 		}
@@ -248,6 +249,8 @@ bool	Server::handleConnections()
 		}
 		checkClientEvents();
 		handleMessages();
+		std::cout << "SIZE:" << std::endl;
+		std::cout << clientSock.size() << std::endl;
 		pollout(0);
 	}
 }

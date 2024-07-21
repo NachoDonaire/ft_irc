@@ -37,12 +37,12 @@ Channel& Channel::operator = (const Channel& src)
 	return *this;
 }
 
-vectorStr Channel::getUsers(void) const
+vectorStr &Channel::getUsers(void) 
 {
 	return this->users;
 }
 
-vectorStr Channel::getAdmins() const
+vectorStr &Channel::getAdmins() 
 {
 	return this->admins;
 }
@@ -121,6 +121,7 @@ void	Channel::setTopicRestriction(const bool& src)
 
 void	Channel::joinClient(std::string* userId, const std::string password, const bool& isAdmin)
 {
+	std::cout << "PASSWORD: " << this->password << std::endl;
 	if (password != this->password)
 		//throw std::logic_error("The password provided is not valid for the channel");
 		throw std::logic_error("ERR_BADCHANNELKEY");
@@ -277,3 +278,22 @@ int	Channel::parseChannelId(str src) const
 	return (1);
 }
 
+bool	Channel::isAdmin(std::string nick)
+{
+	for (vectorStr::iterator it = admins.begin(); it != admins.end(); it++)
+	{
+		if (nick == **it)
+			return 1;
+	}
+	return 0;
+}
+
+bool	Channel::isUser(std::string nick)
+{
+	for (vectorStr::iterator it = users.begin(); it != users.end(); it++)
+	{
+		if (nick == **it)
+			return 1;
+	}
+	return 0;
+}

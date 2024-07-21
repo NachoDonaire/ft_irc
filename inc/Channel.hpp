@@ -38,10 +38,14 @@ public:
 	bool isRegister(std::string* userId);
 
 	std::string	nameAdmin(std::string admin);
-	vectorStr	getUsers() const;
-	vectorStr	getAdmins() const;
+	vectorStr	&getUsers() ;
+	const vectorStr	&getUsers() const {return this->users;};
+	vectorStr	&getAdmins()  ;
+	const vectorStr	&getAdmins()  const {return this->admins;};
 	str		getTopic() const;
 	str		getId() const;
+	bool		isAdmin(std::string nick);
+	bool		isUser(std::string nick);
 	str		getPassword() const;
 	int 		getMaxUsers() const;
 	int 		parseChannelId(str src) const;
