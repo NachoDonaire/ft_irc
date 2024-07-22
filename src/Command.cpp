@@ -55,7 +55,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += "";
 			break;
 		case(KICK):
-			std::cout << "EEEEEEGE PASA AQUII CON EL KIICK" << std::endl;
+			//std::cout << "EEEEEEGE PASA AQUII CON EL KIICK" << std::endl;
 			response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " KICK " + params[1] + " " + params[2];
 			if (params.size() > 3)
 			{
@@ -65,6 +65,20 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 					response += *it;
 				}
 			}
+			break;
+		case(PART):
+			response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " PART " + params[1];
+			if (params.size() > 2)
+			{
+				for (std::vector<std::string>::iterator it = params.begin() + 2; it != params.end(); it++)
+				{
+					response += " ";
+					response += *it;
+				}
+			}
+			break;
+		case(ERR_NOTONCHANNEL):
+			response += " 442 " + launcher->getNick() + " " + params[1] + " :You are not in this channel";
 			break;
 		case(NICK_OK):
 			if (launcher->getNick() == "")
@@ -225,6 +239,15 @@ void	Command::markAction(std::vector<std::string> params)
 		cap(params);
 	else if (cmd == "QUIT")
 		quit(params);
+	else if  (cmd == "PART")
+	{
+		if (!launcher->getRegister())
+		{
+			notRegistered(params);
+			return ;
+		}
+		part(params);
+	}
 	else if (cmd == "PRIVMSG")
 	{
 		//std::cout << "comienza" << std::endl;
@@ -701,26 +724,76 @@ void Command::msgError(int type, std::vector<std::string> params)
 
 void	Command::markChannel(Channel *ch, std::vector<std::string> params)
 {
+	std::cout << "--------------------" << std::endl;
 	ch->printAdminUsers();
 	
 	for (std::vector<std::string*>::iterator u = ch->getUsers().begin() ; u != ch->getUsers().end(); u++)
 	{
-	std::cout << "GIGANTOOOooooooooooooooOOOOOOOOO" << ch->getUsers().size() <<std::endl;
 		Client *c = findClientByNick(**u);
-		std::cout << "Servidor n: " << **u << std::endl;
 		if (c != &(*(clients->end())))
+		{
 			markie(c, params, KICK);
+		}
 	}
 	for (std::vector<std::string*>::iterator u = ch->getAdmins().begin(); u != ch->getAdmins().end(); u++)
 	{
 		Client *c = findClientByNick(**u);
-		std::cout << "Servidor n: " << **u << std::endl;
 		if (c != &(*(clients->end())))
 			markie(c, params, KICK);
 	}
+	//std::vector<std::string *>::iterator posRm = ch->getUsers().begin();
+	for (std::vector<std::string *>::iterator rm = ch->getUsers().begin(); rm != ch->getUsers().end(); rm++)
+	{
+		if (**rm == params[1])
+			ch->getUsers().erase(rm);
+	}
+	ch->printAdminUsers();
+	std::cout << "--------------------" << std::endl;
 }
 		
-
+void	Command::part(std::vector<std::string> params)
+{
+	if (params.size() < 2)
+	{
+		return msgError(ERR_NEEDMOREPARAMS, params);
+	}
+	std::vector<std::string> chanToLeave = split(params[1], ",");
+	for (std::vector<std::string>::iterator it = chanToLeave.begin(); it != chanToLeave.end(); it++)
+	{
+		std::cout << "El parteito" << std::endl;
+		Channel *ch = this->getChannelByName(*it);
+		ch->printAdminUsers();
+		if  (!ch->isUser(launcher->getNick()))
+			return msgError(ERR_NOTONCHANNEL, params);
+		for (std::vector<std::string*>::iterator u = ch->getUsers().begin() ; u != ch->getUsers().end(); u++)
+		{
+			Client *c = findClientByNick(**u);
+			if (c != &(*(clients->end())))
+			{
+				markie(c, params, PART);
+			}
+		}
+		for (std::vector<std::string*>::iterator u = ch->getAdmins().begin() ; u != ch->getAdmins().end(); u++)
+		{
+			Client *c = findClientByNick(**u);
+			if (c != &(*(clients->end())))
+			{
+				markie(c, params, PART);
+			}
+		}
+		for (std::vector<std::string *>::iterator rm = ch->getUsers().begin(); rm != ch->getUsers().end(); rm++)
+		{
+			if (**rm == launcher->getNick())
+				ch->getUsers().erase(rm);
+		}
+		for (std::vector<std::string *>::iterator rm = ch->getAdmins().begin(); rm != ch->getAdmins().end(); rm++)
+		{
+			if (**rm == launcher->getNick())
+				ch->getUsers().erase(rm);
+		}
+		ch->printAdminUsers();
+	}
+}
 
 void	Command::kick(const std::vector<std::string>& params)
 {
@@ -806,6 +879,7 @@ int Command::stringToEnum(const str& str) {
         stringToEnumMap["NICK_REPEATED"] = NICK_REPEATED;
         stringToEnumMap["WELCOME"] = WELCOME;
         stringToEnumMap["QUIT"] = QUIT;
+        stringToEnumMap["PART"] = PART;
         stringToEnumMap["CAP_LS"] = CAP_LS;
         stringToEnumMap["CAP_END"] = CAP_END;
         stringToEnumMap["PRIVMSG"] = PRIVMSG;
@@ -814,6 +888,7 @@ int Command::stringToEnum(const str& str) {
         stringToEnumMap["OK_PSSWD"] = OK_PSSWD;
         stringToEnumMap["JOIN_OK"] = JOIN_OK;
         stringToEnumMap["KICK"] = KICK;
+        stringToEnumMap["ERR_NOTONCHANNEL"] = ERR_NOTONCHANNEL;
         stringToEnumMap["ERR_NEEDMOREPARAMS"] = ERR_NEEDMOREPARAMS;
         stringToEnumMap["ERR_NOSUCHCHANNEL"] = ERR_NOSUCHCHANNEL;
         stringToEnumMap["ERR_CHANOPRIVSNEEDED"] = ERR_CHANOPRIVSNEEDED;
