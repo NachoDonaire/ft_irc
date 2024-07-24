@@ -37,9 +37,14 @@ enum command {
 	ERR_BADCHANNELID,
 	RPL_TOPIC,
 	RPL_NAMREPLY,
-	NOT_REGISTERED
+	NOT_REGISTERED,
+	ERR_NOSUCHSERVER,
+	RPL_WHOREPLY,
+	RPL_ENDOFWHO,
 };
 
+           
+           
 
 class Client
 {
