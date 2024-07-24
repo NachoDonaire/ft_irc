@@ -42,9 +42,14 @@ enum command {
 	RPL_TOPIC,
 	RPL_NAMREPLY,
 	NOT_REGISTERED,
-	KICK
+	KICK,
+	ERR_NOSUCHSERVER,
+	RPL_WHOREPLY,
+	RPL_ENDOFWHO
 };
 
+           
+           
 
 class Client
 {

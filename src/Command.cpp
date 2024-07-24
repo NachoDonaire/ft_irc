@@ -168,7 +168,14 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		case(NOT_REGISTERED):
 			response += " 451 * :You have not registered";
 			break;
-
+/*
+		case(RPL_WHOREPLY):
+			//
+			break;
+		case(RPL_ENDOFWHO):
+			//
+			break;
+*/
 	}
 	return (response + "\r\n");
 }
@@ -869,6 +876,7 @@ vectorCh::iterator	Command::getChannel(const str& id)
 	return channel;
 }
 
+
 int Command::stringToEnum(const str& str) {
     static std::map<std::string, int> stringToEnumMap;
 
@@ -900,6 +908,8 @@ int Command::stringToEnum(const str& str) {
         stringToEnumMap["RPL_TOPIC"] = RPL_TOPIC;
         stringToEnumMap["RPL_NAMREPLY"] = RPL_NAMREPLY;
         stringToEnumMap["ERR_BADCHANNELID"] = ERR_BADCHANNELID;
+        stringToEnumMap["RPL_WHOREPLY"] = RPL_WHOREPLY;
+        stringToEnumMap["RPL_ENDOFWHO"] = RPL_ENDOFWHO;
     }
 
     std::map<std::string, int>::const_iterator it = stringToEnumMap.find(str);
