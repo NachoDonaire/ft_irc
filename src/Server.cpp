@@ -126,14 +126,15 @@ void	Server::checkClientEvents()
 		{
 			std::cout << "OOOJ" << std::endl;
 			out.push_back(pos);
-			pos++;
-			sit++;
-			continue ;
+			//pos++;
+			//sit++;
+			//continue ;
 		}
 		if (it->revents & (POLLHUP | POLLERR | POLLNVAL))
 		{
 			std::cerr << "client hang, quiting this client" << std::endl;
-			out.push_back(pos);
+			if (!sit->getOff())
+				out.push_back(pos);
 		}
 		else if (it->revents & POLLIN)
 		{
@@ -142,7 +143,8 @@ void	Server::checkClientEvents()
 			if (nread <= 0)
 			{
 				std::cerr << "error at reading, quiting this client" << std::endl;
-				out.push_back(pos);
+				if (!sit->getOff())
+					out.push_back(pos);
 			}
 			this->recData[nread] = '\0';
 			std::cout << "MSG" << std::endl;
@@ -154,6 +156,8 @@ void	Server::checkClientEvents()
 			std::vector<std::string>	responses = sit->getResponses();
 			std::vector<int>		ncmd = sit->getNCmd();
 			std::vector<int>::iterator	ncmdit = ncmd.begin();
+			std::cout << "WEEEEEEEE" << std::endl;
+			std::cout << sit->getResponses().size()  << std::endl;
 
 			for(std::vector<std::string>::iterator r = responses.begin(); r != responses.end(); r++)
 			{
@@ -180,6 +184,7 @@ void	Server::checkClientEvents()
 	for (std::vector<int>::iterator it = out.begin(); it != out.end(); it++)
 	{
 		std::cout << "GULIII" << std::endl;
+		std::cout << out.size() << std::endl;
 		clientSock.erase(pfd + ((*it) + 1));
 		clients.erase(cl + (*it));
 	}

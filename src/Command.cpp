@@ -111,6 +111,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			{
 				response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " QUIT ";
 				for (size_t i = 1; i < params.size(); i++)
+					response += " ";
 					response += params[i];
 				/*std::string quitMsg(&params[1].c_str()[1]);
 				response += " QUIT: ";
@@ -137,7 +138,8 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
 			break;
 		case(BAD_PSSWD):
-			response += " 464 " + launcher->getNick() + " :Password incorrect";
+			std::cout << "hooolaaaa" << std::endl;
+			response = "ERROR :Error: bad password or missing one. Disconnecting...";
 			launcher->setOff(1);
 			break;
 		case(PRIVMSG):
@@ -211,9 +213,9 @@ void	Command::handleCmd()
 				std::cout << *y << std::endl;
 				*/
 		}
-	//std::cout << "pero toocho" << std::endl;
 		markAction(params);
-	//std::cout << "de cojones" << std::endl;
+		if (launcher->getOff() == 1)
+			return ;
 		params.clear();
 	}
 }
@@ -454,7 +456,11 @@ int	Command::pass(std::vector<std::string> params)
 	}
 	launcher->setPsswd(params[1]);
 	if (launcher->getPsswd() != servPsswd)
+	{
 		markEverything(BAD_PSSWD, params);
+		launcher->setPollOut(1);
+		return 3;
+	}
 	else
 		markEverything(OK_PSSWD, params);
 	if (launcher->getRegister())
@@ -502,7 +508,12 @@ int	Command::nick(std::vector<std::string> params)
 {
 	std::string response;
 
-	//std::cout << "algo sucede lalalala" << std::endl;
+	if (launcher->getPsswd() == "")
+	{
+		markEverything(BAD_PSSWD, params);
+		launcher->setPollOut(1);
+		return 3;
+	}
 	if (params.size() != 2)
 	{
 		markEverything(ERR_NEEDMOREPARAMS, params);
@@ -560,6 +571,8 @@ void	Command::quit(std::vector<std::string> params)
 	std::vector<std::string> nicks;
 	std::cout << "Channels size when quitting: "<< channels->size() <<std::endl;
 
+	markEverything(QUIT, params);
+	launcher->setPollOut(1);
 
 	/*for (vectorCh::iterator ch = channels->begin(); ch != channels->end(); ch++)
 	{
