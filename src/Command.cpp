@@ -111,8 +111,10 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			{
 				response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " QUIT ";
 				for (size_t i = 1; i < params.size(); i++)
+				{
 					response += " ";
 					response += params[i];
+				}
 				/*std::string quitMsg(&params[1].c_str()[1]);
 				response += " QUIT: ";
 				response += quitMsg;
