@@ -297,13 +297,10 @@ void	Command::markAction(std::vector<std::string> params)
 		catch(std::exception& e)
 		{
 			responseType = stringToEnum(e.what());
-			//std::cout << "gepasaaquiiii" << std::endl;
 			std::cout << e.what() << std::endl;
-		//std::cout << launcher->getNick() << "says NoooOOOOOoooOOOO " << e.what() << std::endl;
 		}
 		markEverything(responseType, params);
 		launcher->setPollOut(1);
-		//std::cout << launcher->getNick() << "says eeEEeeEEee" << std::endl;
 	}
 	/*else if (cmd == "WHO")
 	{
@@ -864,6 +861,8 @@ void	Command::join(const std::vector<std::string>& params, str* userId)
 		vectorCh::iterator channel = getChannel(*it);
 		if (channel == channels->end())
 		{
+			if (*it[0] != '&' || *it[0] != '#')
+				throw std::logic_error("ERR_BADCHANMASK");
 			std::cout << "GEEEEEEEPASAAAAAAAAA " << *it << std::endl;
 			Channel ch = Channel(*it);
 			ch.joinClient(userId, password, true);
