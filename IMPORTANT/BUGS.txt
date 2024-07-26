@@ -1,0 +1,18 @@
+// Lista de bugs conocidos sin fixear
+* Conectarse al server a través de nick y user (sin password)
+Actual: Se conecta al servidor seteando el nick
+Expected: el server rechaza la conexión ya que no hay contraseña, revisar si es el mismo que cuando la contraseña es erronea o no
+-- REVISAR: con server oficial con contraseña si estas conectado y no regristado, o directamente no te conectas
+
+* Puedes unirte a un canal con cualquier nombre
+Actual: hola, hola    hola y +200length son nombres validos de canales
+Expected: El nombre del canal debe cumplir -
+
+   Channels names are strings (beginning with a '&' or '#' character) of
+   length up to 200 characters.  Apart from the the requirement that the
+   first character being either '&' or '#'; the only restriction on a
+   channel name is that it may not contain any spaces (' '), a control G
+   (^G or ASCII 7), or a comma (',' which is used as a list item
+   separator by the protocol).
+
+// Lista de bugs ya fixeados
