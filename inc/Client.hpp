@@ -22,6 +22,8 @@ enum command {
 	CAP_LS,
 	CAP_END,
 	PRIVMSG,
+	MODE,
+	MODE_WITH_CHANNEL,
 	BAD_PSSWD,
 	USER,
 	OK_PSSWD,

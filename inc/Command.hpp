@@ -33,11 +33,13 @@ class Command
 		int	parseNick(std::string);
 		int	user(std::vector<std::string> params);
 		void	markChannel(Channel *ch, std::vector<std::string> params);
+		void	modeOptions(Channel *ch, std::vector<std::string> params);
 		void	quit(std::vector<std::string> params);
 		void	part(std::vector<std::string> params);
 		void	handleCmd();
 		Channel	*getChannelByName(std::string name);
 		void	kick(const std::vector<std::string>& params);
+		void	mode(std::vector<std::string>& params);
 		void	msgError(int type, std::vector<std::string> params);
 		void	notRegistered(std::vector<std::string> nick);
 		std::string responseGenerator(int msg, std::vector<std::string> params);

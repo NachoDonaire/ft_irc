@@ -77,6 +77,11 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 				}
 			}
 			break;
+		case(MODE_WITH_CHANNEL):
+			response += " 324 " + launcher->getNick() + " " + params.at(params.size() - 1) + ":";
+			for (size_t i = 2; i < params.size() - 1; i++)
+				response += params.at(i);
+			break;
 		case(ERR_NOTONCHANNEL):
 			response += " 442 " + launcher->getNick() + " " + params[1] + " :You are not in this channel";
 			break;
@@ -100,7 +105,6 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " 432 " + launcher->getUser() + " " + params[1];
 			break;
 		case(ERR_BADCHANNELID):
-			std::cout << "HOOOOOOOOOLAAAAAAAAAAA" << std::endl;
 			response +=  " 476 " + launcher->getNick() +  " " + params[1] + " :Bad Channel name";
 			break;
 		case(QUIT):
@@ -257,6 +261,8 @@ void	Command::markAction(std::vector<std::string> params)
 			notRegistered(params);
 			return ;
 		}
+		if (channels->size() == 0)
+			return msgError(ERR_NOSUCHCHANNEL, params);
 		part(params);
 	}
 	else if (cmd == "PRIVMSG")
@@ -277,6 +283,15 @@ void	Command::markAction(std::vector<std::string> params)
 			return ;
 		}
 		kick(params);
+	}
+	else if (cmd == "MODE")
+	{
+		if (!launcher->getRegister())
+		{
+			notRegistered(params);
+			return ;
+		}
+		mode(params);
 	}
 	else if (cmd == "JOIN")
 	{
@@ -769,6 +784,11 @@ void	Command::markChannel(Channel *ch, std::vector<std::string> params)
 		if (**rm == params[1])
 			ch->getUsers().erase(rm);
 	}
+	for (std::vector<std::string *>::iterator rm = ch->getAdmins().begin(); rm != ch->getAdmins().end(); rm++)
+	{
+		if (**rm == params[1])
+			ch->getAdmins().erase(rm);
+	}
 	ch->printAdminUsers();
 	std::cout << "--------------------" << std::endl;
 }
@@ -782,23 +802,25 @@ void	Command::part(std::vector<std::string> params)
 	std::vector<std::string> chanToLeave = split(params[1], ",");
 	for (std::vector<std::string>::iterator it = chanToLeave.begin(); it != chanToLeave.end(); it++)
 	{
-		std::cout << "El parteito" << std::endl;
 		Channel *ch = this->getChannelByName(*it);
 		ch->printAdminUsers();
-		if  (!ch->isUser(launcher->getNick()))
+		if  (!ch->isUser(launcher->getNick()) && !ch->isAdmin(launcher->getNick()))
 			return msgError(ERR_NOTONCHANNEL, params);
 		for (std::vector<std::string*>::iterator u = ch->getUsers().begin() ; u != ch->getUsers().end(); u++)
 		{
+			std::cout << "ahi va: " << *u << " ---- " << **u << std::endl;
 			Client *c = findClientByNick(**u);
-			if (c != &(*(clients->end())))
+				std::cout << "weeeeeeeeeeeeeeeeeeeeeeeeeeeeee" << std::endl;
+			if (c && c != &(*(clients->end())))
 			{
+				std::cout << "weeeeeeeeeeeeeeeeeeeeeeeeeeeeee" << std::endl;
 				markie(c, params, PART);
 			}
 		}
 		for (std::vector<std::string*>::iterator u = ch->getAdmins().begin() ; u != ch->getAdmins().end(); u++)
 		{
 			Client *c = findClientByNick(**u);
-			if (c != &(*(clients->end())))
+			if (c && c != &(*(clients->end())))
 			{
 				markie(c, params, PART);
 			}
@@ -811,7 +833,7 @@ void	Command::part(std::vector<std::string> params)
 		for (std::vector<std::string *>::iterator rm = ch->getAdmins().begin(); rm != ch->getAdmins().end(); rm++)
 		{
 			if (**rm == launcher->getNick())
-				ch->getUsers().erase(rm);
+				ch->getAdmins().erase(rm);
 		}
 		ch->printAdminUsers();
 	}
@@ -842,6 +864,51 @@ void	Command::kick(const std::vector<std::string>& params)
 	//markEverything(KICK, params);
 	//launcher->setPollOut(1);
 }
+
+void	Command::modeOptions(Channel *ch, std::vector<std::string> params)
+{
+	if (params.size() == 2)
+	{
+		if (ch->getPassword() != "")
+			params.push_back("+k");
+		if (ch->getMaxUsers() > 0)
+			params.push_back("+l");
+		if (ch->getInviteMode())
+			params.push_back("+i");
+		if (ch->getTopicRestriction())
+			params.push_back("+t");
+		markEverything(MODE_WITH_CHANNEL, params);
+		launcher->setPollOut(1);
+		return ;
+	}
+	params.push_back(ch->getId());
+}
+
+
+
+void	Command::mode(std::vector<std::string>& params)
+{
+	if (params.size() < 2)
+	{
+		return msgError(ERR_NEEDMOREPARAMS, params);
+	}
+	Channel *ch = this->getChannelByName(params[1]);
+	if (!ch)
+	{
+		return msgError(ERR_NOSUCHCHANNEL, params);
+	}
+	ch->printAdminUsers();
+	if (!ch->isAdmin(launcher->getNick()) && !ch->isUser(launcher->getNick()))
+	{
+		return msgError(ERR_USERNOTINCHANNEL, params);
+	}
+	/*if (!ch->isAdmin(params[2]) && !ch->isUser(params[2]))
+	{
+		return msgError(ERR_USERNOTINCHANNEL, params);
+	}*/
+	modeOptions(ch, params);
+}
+
 
 
 
@@ -911,6 +978,8 @@ int Command::stringToEnum(const str& str) {
         stringToEnumMap["OK_PSSWD"] = OK_PSSWD;
         stringToEnumMap["JOIN_OK"] = JOIN_OK;
         stringToEnumMap["KICK"] = KICK;
+        stringToEnumMap["MODE"] = MODE;
+        stringToEnumMap["MODE_WITH_CHANNEL"] = MODE_WITH_CHANNEL;
         stringToEnumMap["ERR_NOTONCHANNEL"] = ERR_NOTONCHANNEL;
         stringToEnumMap["ERR_NEEDMOREPARAMS"] = ERR_NEEDMOREPARAMS;
         stringToEnumMap["ERR_NOSUCHCHANNEL"] = ERR_NOSUCHCHANNEL;

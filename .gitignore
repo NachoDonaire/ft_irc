@@ -1,4 +1,5 @@
 #Ge pasa con los .swp que usamos vim ambos, shulito | chayooooo
+tags
 *.swp
 # Prerequisites
 *.d

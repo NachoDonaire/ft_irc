@@ -15,7 +15,8 @@ Channel::Channel(const Channel& src)
 Channel::Channel(const std::string id): users(0), admins(0), topic(""), password(""), inviteMode(false), topicRestriction(false)
 {
 	this->setId(id);
-	maxUsers = (unsigned int)MAX_USERS_PER_CHANNEL;
+	//maxUsers = (unsigned int)MAX_USERS_PER_CHANNEL;
+	maxUsers = -1;
 
 }
 
@@ -283,7 +284,9 @@ bool	Channel::isAdmin(std::string nick)
 	for (vectorStr::iterator it = admins.begin(); it != admins.end(); it++)
 	{
 		if (nick == **it)
+		{
 			return 1;
+		}
 	}
 	return 0;
 }
