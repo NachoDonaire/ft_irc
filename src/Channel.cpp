@@ -155,19 +155,21 @@ void	Channel::printAdminUsers() const
 
 void 	Channel::joinClient(vectorStr& users, std::string *userId, const bool& isAdmin)
 {
+	if (inviteMode == true)
+		throw std::logic_error("ERR_INVITEONLYCHAN");
 	if (*userId == "")
-		throw std::logic_error("Provide a valid userId to join to the Channel.");
+		throw std::logic_error("ERR_NEEDMOREPARAMS");
 	if (users.size() + admins.size() >= maxUsers && maxUsers >= 0)
-		//throw std::logic_error("The Channel is full");
-	{
-		//std::cout << " a ver cuantos users y admins hay : " << users.size() + admins.size() << " frente a " << maxUsers << std::endl;
 		throw std::logic_error("ERR_CHANNELISFULL");
-	}
 	vectorStr::iterator user = findUser(users, userId);
+/*
+mejor poner esta comprobación en la clase command, cuando es un channel existente si ya esta no hacer nada y responder con OK
+
 	//El client no manda mensaje si el usuario ya está en el canal
 	//revisar si se pasan varios canales y el usuario ya está en uno que hace el cliente 
 	if (user != users.end() || findUser(admins, userId) != admins.end())
 		throw std::logic_error("The user is already in the Channel");
+*/
 
 	isAdmin ? admins.push_back(userId) : users.push_back(userId);
 	std::cout << "JOIN CLIENT" << std::endl;

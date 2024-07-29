@@ -66,7 +66,7 @@ private:
 	//vectorStr	users;
 	//cambio prov a &str
 	vectorStr	users;
-	std::vector<std::string *>	admins;
+	vectorStr	admins;
 	std::string 	topic;
 	std::string 	id;
 	std::string 	password;
