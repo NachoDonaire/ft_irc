@@ -63,8 +63,6 @@ public:
 	void		printAdminUsers() const ;
 	
 private:
-	//vectorStr	users;
-	//cambio prov a &str
 	vectorStr	users;
 	vectorStr	admins;
 	std::string 	topic;
