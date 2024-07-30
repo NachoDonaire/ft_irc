@@ -4,6 +4,7 @@
 #include <Ircsrv.hpp>
 #include <Command.hpp>
 #include <Channel.hpp>
+#include <unistd.h>
 typedef std::vector<Channel>	vectorCh;
 
 class Server
@@ -32,6 +33,7 @@ class Server
 		void		checkClientEvents();
 		void		mark(Client *c, std::string msg);
 		void		handleMessages();
+		void		treatRecData(int nread);
 		void		printClientSock();
 		int		getPortError() {return this->portError; } ;
 		bool		handleConnections();

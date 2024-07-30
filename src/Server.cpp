@@ -110,6 +110,21 @@ void	Server::establishConnection()
 	std::cout << "His position is : " << currentSize - 1 << std::endl;
 }
 
+void	Server::treatRecData(int nread)
+{
+	int	i;
+
+	i = nread - 3;
+	while (this->recData[i] == ' ')
+	{
+		i--;
+	}
+	this->recData[i+1] = '\r';
+	this->recData[i+2] = '\n';
+	this->recData[i+3] = '\0';
+}
+
+
 void	Server::checkClientEvents()
 {
 	std::vector<Client>::iterator	sit = clients.begin();
@@ -147,7 +162,8 @@ void	Server::checkClientEvents()
 					out.push_back(pos);
 			}
 			this->recData[nread] = '\0';
-			std::cout << "MSG" << std::endl;
+			treatRecData(nread);
+			std::cout << "MSG ---> " << nread <<std::endl;
 			std::cout << recData << std::endl;
 			sit->setMsg(this->recData);
 		}

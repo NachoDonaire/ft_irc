@@ -1,0 +1,4 @@
+1. mandar al cliente todos los modos sin espacios
+2. corregir orden de argumentos
+3. acabar +o -o
+4. pruebas exhaustivas 

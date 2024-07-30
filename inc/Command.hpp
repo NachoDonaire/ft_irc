@@ -24,9 +24,11 @@ class Command
     		Command();
 		Command& operator=(const Command&);
 		std::vector<std::string>	split(std::string, const char *c);
+		std::vector<std::string>	split(std::string, const char c);
 		void	markAction(std::vector<std::string> params);
 		std::map<int, std::vector<std::string> >	getCmd() { return this->cmd;};
 		int	pass(std::vector<std::string> params);
+		bool	oFlagChecker(std::string option);
 		void	cap(std::vector<std::string> params);
 		void	who(std::vector<std::string> params);
 		int	nick(std::vector<std::string> params);
@@ -34,12 +36,15 @@ class Command
 		int	user(std::vector<std::string> params);
 		void	markChannel(Channel *ch, std::vector<std::string> params);
 		void	modeOptions(Channel *ch, std::vector<std::string> params);
+		void	modeInstructions(Channel *ch, std::vector<std::string> params);
+		int	plusMode(Channel *ch, std::vector<std::string> params, std::string options);
+		bool	isModeOption(char c);
 		void	quit(std::vector<std::string> params);
 		void	part(std::vector<std::string> params);
 		void	handleCmd();
 		Channel	*getChannelByName(std::string name);
 		void	kick(const std::vector<std::string>& params);
-		void	mode(std::vector<std::string>& params);
+		void	mode(std::vector<std::string> params);
 		void	msgError(int type, std::vector<std::string> params);
 		void	notRegistered(std::vector<std::string> nick);
 		std::string responseGenerator(int msg, std::vector<std::string> params);

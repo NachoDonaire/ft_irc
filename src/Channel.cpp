@@ -161,7 +161,6 @@ void 	Channel::joinClient(vectorStr& users, std::string *userId, const bool& isA
 		throw std::logic_error("ERR_NEEDMOREPARAMS");
 	if (users.size() + admins.size() >= maxUsers && maxUsers >= 0)
 		throw std::logic_error("ERR_CHANNELISFULL");
-	vectorStr::iterator user = findUser(users, userId);
 /*
 mejor poner esta comprobación en la clase command, cuando es un channel existente si ya esta no hacer nada y responder con OK
 

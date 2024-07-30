@@ -54,6 +54,15 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		case(OK_PSSWD):
 			response += "";
 			break;
+		case(MODE_OK):
+			std::cout << "WEEEE" << std::endl;
+			response = ":@" + launcher->getNick() + " MODE";
+			for (int i = 1; i < params.size(); i++)
+			{
+				response += " ";
+				response += params.at(i);
+			}
+			break;
 		case(KICK):
 			//std::cout << "EEEEEEGE PASA AQUII CON EL KIICK" << std::endl;
 			response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " KICK " + params[1] + " " + params[2];
@@ -78,12 +87,18 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			}
 			break;
 		case(MODE_WITH_CHANNEL):
-			response += " 324 " + launcher->getNick() + " " + params.at(params.size() - 1) + ":";
-			for (size_t i = 2; i < params.size() - 1; i++)
+			response += " 324 " + launcher->getNick() + " " + params.at(1) + " :";
+			for (size_t i = 2; i < params.size(); i++)
 				response += params.at(i);
 			break;
 		case(ERR_NOTONCHANNEL):
 			response += " 442 " + launcher->getNick() + " " + params[1] + " :You are not in this channel";
+			break;
+		case(ERR_INVITEONLYCHAN):
+			response += " 473 " + launcher->getNick() + " " + params[1]  + " :Cannot join the channel (+i)";
+			break;
+		case(ERR_UNKNOWNMODE):
+			response += " 472 " + launcher->getNick() + " " + params[1] + " " + params[0] + " :Not valid mode";
 			break;
 		case(NICK_OK):
 			if (launcher->getNick() == "")
@@ -134,6 +149,9 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		case(ERR_NOSUCHCHANNEL):
 			response += " 403 " + launcher->getNick() + " :No such a channel";
 			break;
+		case(ERR_CHANNELISFULL):
+			response += " 471 " + launcher->getNick() + " " + params[1] + " :This channel is full";
+			break;
 		case(ERR_CHANOPRIVSNEEDED):
 			response += " 482 " + launcher->getNick() + " :You are not a chop";
 			break;
@@ -171,10 +189,11 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		case(ERR_BADCHANNELKEY):
 			response = params[1] + " :Cannot join channel (+k)";
 			break;
-		case(ERR_CHANNELISFULL):
-			break;
 		case(NOT_REGISTERED):
 			response += " 451 * :You have not registered";
+			break;
+		case(ERR_BADCHANMASK):
+			response += " 476 " + launcher->getNick() + " " + params[1] + " Channel must begin by '#' character";
 			break;
 /*
 		case(RPL_WHOREPLY):
@@ -239,6 +258,11 @@ void	Command::markAction(std::vector<std::string> params)
 	//std::cout << "iusa" << std::endl;
 	//std::cout << cmd << std::endl;
 	*/
+	std::cout << " LO QUE EVALUAMOS " << std::endl;
+	std::cout << cmd << std::endl;
+	for (std::vector<std::string>::iterator it = params.begin() ; it != params.end(); it++)
+		if (*it == "\r\n")
+			params.erase(it);
 	if (cmd == "PASS")
 		pass(params);
 	else if (cmd == "NICK")
@@ -291,6 +315,10 @@ void	Command::markAction(std::vector<std::string> params)
 			notRegistered(params);
 			return ;
 		}
+		std::cout << "UUUUMPTAGUMPDTA " << params.at(params.size() - 1) << std::endl;
+		write(1, &params.at(params.size() - 1)[0], 1);
+		if (params.at(params.size() - 1).find("\r\n") != std::string::npos)
+			std::cout << "WWWWWWWWWWAAAAAAAAAAAAA" << std::endl;
 		mode(params);
 	}
 	else if (cmd == "JOIN")
@@ -401,6 +429,35 @@ std::vector<std::string> Command::split(std::string na, const char *c)
 	return tokens;
 }
 
+std::vector<std::string> Command::split(std::string na, const char c)
+{
+	std::string n(na);
+	size_t pos;
+	std::vector<std::string> tokens;
+	std::string		 token;
+
+	if (n.find(c) == std::string::npos)
+		tokens.push_back(na);
+	pos = n.find(c);
+	while (pos != std::string::npos)
+	{
+		token = n.substr(0, pos);
+		tokens.push_back(token);
+		while (n.at(pos) == c)
+			pos++;
+		n.erase(0, pos);
+		pos = n.find(c);
+		if (pos == std::string::npos)
+		{
+			token = n.substr(0, pos);
+			tokens.push_back(token);
+			break ;
+		}
+	}
+	return tokens;
+}
+
+
 //aver que hacer con mas de 512 bytes
 int Command::parseMsg()
 {
@@ -415,7 +472,7 @@ int Command::parseMsg()
 	for (size_t i = 0; i < tokens.size(); i++)
 	{
 	
-		parameters = split(tokens[i], " ");
+		parameters = split(tokens[i], ' ');
 		cmd[i] = parameters;
 		parameters.clear();
 	}
@@ -862,6 +919,139 @@ void	Command::kick(const std::vector<std::string>& params)
 	//launcher->setPollOut(1);
 }
 
+bool	Command::isModeOption(char c)
+{
+	if (c == 'i' || c == 'l' || c == 'o' || c == 'k' || c == 't')
+		return 1;
+	return 0;
+}
+
+bool	Command::oFlagChecker(std::string option)
+{
+	for (int i = 0; i < option.size(); i++)
+	{
+		if (option[i] != 'o' && option[i] != '+' && option[i] != '-')
+			return 0;
+	}
+	return 1;
+}
+
+int Command::plusMode(Channel *ch, std::vector<std::string> params, std::string options)
+{
+	int	i = 0;
+	int	pos = 0;
+	char sign;
+
+	for (int i = 0; i < params.size() ; i++)
+	{
+		std::cout << "EE : " << params[i] << std::endl;
+	}
+	while (i < options.size())
+	{
+		if (options.at(i) == '+' || options.at(i) == '-')
+		{
+			sign = options.at(i);
+			i++;
+		}
+		if (!isModeOption(options.at(i)))
+			return -3;
+		if (options.at(i) == 'i')
+		{
+			sign == '+' ? ch->setInviteMode(1) : ch->setInviteMode(0);
+		}
+		//ECHAR OJO
+		else if (options.at(i) == 'l')
+		{
+			if (params.size() <= 1 && sign == '+')
+				return -1;
+			for (int i = 0; i != params.at(1).size(); i++)
+			{
+				if (!std::isdigit(params.at(1).at(i)))
+					return -2;
+			}
+			sign == '+' ? ch->setMaxUsers(std::atoi(params[1].c_str())) : ch->setMaxUsers(-1);
+			pos++;
+		}
+		else if (options.at(i) == 't')
+		{
+			sign == '+' ? ch->setTopicRestriction(0) : ch->setTopicRestriction(1);
+		}
+		else if (options.at(i) == 'k')
+		{
+			int	passPos = 0;
+			if (params.size() <= 1)
+				return -1;
+			if (options.find('l') != std::string::npos)
+				passPos = 2;
+			else
+				passPos = 1;
+			sign == '+' ? ch->setPassword(params.at(passPos)) : ch->setPassword("");
+			pos++;
+		}
+		else if (options.at(i) == 'o')
+		{
+			if (params.size() <= 1)
+				return -1;
+			if (!oFlagChecker(options))
+				return -3;
+			if (!ch->isAdmin(params.at(pos + 1)) && !ch->isUser(params.at(pos + 1))) 
+				return -7;
+			for (int i = 1; i < options.size(); i++)
+			{
+
+				for (int y = 0; y < ch->getUsers().size(); y++)
+				{
+					std::vector<std::string*>::iterator it = ch->getUsers().begin() + y;
+					if (*(ch->getUsers().at(y)) == options)
+						ch->getUsers().erase(it);
+				}
+			}
+		}
+		i++;
+	}
+	return 1;
+}
+
+void	Command::modeInstructions(Channel *ch, std::vector<std::string> params)
+{
+	std::vector<std::string> neoParams;
+
+	for (size_t i = 2; i < params.size(); i++)
+	{
+		std::string options(params[i++]);
+		if (options[0] != '+' && options[0] != '-')
+		{
+			markEverything(ERR_UNKNOWNMODE, params);
+			launcher->setPollOut(1);
+			return ;
+		}
+		neoParams.push_back(options);
+		while (i < params.size() && (params.at(i).at(0) != '+' && params.at(i).at(0) != '-'))
+			neoParams.push_back(params.at(i++));
+		if (plusMode(ch, neoParams, options) == -1 || neoParams.size() > 3)
+		{
+			markEverything(ERR_NEEDMOREPARAMS, params);
+			launcher->setPollOut(1);
+			return ;
+		}
+		else if (plusMode(ch, neoParams, options) == -2 || plusMode(ch, neoParams, options) == -3)
+		{
+			markEverything(ERR_UNKNOWNMODE, params);
+			launcher->setPollOut(1);
+			return ;
+		}
+		else if (plusMode(ch, neoParams, options) == -7)
+		{
+			markEverything(ERR_USERNOTINCHANNEL, params);
+			launcher->setPollOut(1);
+			return ;
+		}
+	}
+	markEverything(MODE_OK, params);
+	launcher->setPollOut(1);
+}
+
+
 void	Command::modeOptions(Channel *ch, std::vector<std::string> params)
 {
 	if (params.size() == 2)
@@ -878,12 +1068,16 @@ void	Command::modeOptions(Channel *ch, std::vector<std::string> params)
 		launcher->setPollOut(1);
 		return ;
 	}
-	params.push_back(ch->getId());
+	if (!ch->isAdmin(launcher->getNick()))
+	{
+		return msgError(ERR_CHANOPRIVSNEEDED, params);
+	}
+	modeInstructions(ch, params);
 }
 
 
 
-void	Command::mode(std::vector<std::string>& params)
+void	Command::mode(std::vector<std::string> params)
 {
 	if (params.size() < 2)
 	{
@@ -928,9 +1122,8 @@ void	Command::join(const std::vector<std::string>& params, str* userId)
 		vectorCh::iterator channel = getChannel(*it);
 		if (channel == channels->end())
 		{
-			if (*it[0] != '&' || *it[0] != '#')
+			if ((it)->at(0) != '&' && (it)->at(0) != '#')
 				throw std::logic_error("ERR_BADCHANMASK");
-			std::cout << "GEEEEEEEPASAAAAAAAAA " << *it << std::endl;
 			Channel ch = Channel(*it);
 			ch.joinClient(userId, password, true);
 			std::cout << ch.nameAdmin(*userId) << std::endl;
@@ -976,13 +1169,17 @@ int Command::stringToEnum(const str& str) {
         stringToEnumMap["USER"] = USER;
         stringToEnumMap["OK_PSSWD"] = OK_PSSWD;
         stringToEnumMap["JOIN_OK"] = JOIN_OK;
+        stringToEnumMap["MODE_OK"] = MODE_OK;
         stringToEnumMap["KICK"] = KICK;
         stringToEnumMap["MODE"] = MODE;
         stringToEnumMap["MODE_WITH_CHANNEL"] = MODE_WITH_CHANNEL;
         stringToEnumMap["ERR_NOTONCHANNEL"] = ERR_NOTONCHANNEL;
+        stringToEnumMap["ERR_BADCHANMASK"] = ERR_BADCHANMASK;
         stringToEnumMap["ERR_NEEDMOREPARAMS"] = ERR_NEEDMOREPARAMS;
+        stringToEnumMap["ERR_UNKNOWNMODE"] = ERR_UNKNOWNMODE;
         stringToEnumMap["ERR_NOSUCHCHANNEL"] = ERR_NOSUCHCHANNEL;
         stringToEnumMap["ERR_CHANOPRIVSNEEDED"] = ERR_CHANOPRIVSNEEDED;
+        stringToEnumMap["ERR_NOSUCHNICK"] = ERR_NOSUCHNICK;
         stringToEnumMap["ERR_USERNOTINCHANNEL"] = ERR_USERNOTINCHANNEL;
         stringToEnumMap["ERR_INVITEONLYCHAN"] = ERR_INVITEONLYCHAN;
         stringToEnumMap["ERR_CHANNELISFULL"] = ERR_CHANNELISFULL;
