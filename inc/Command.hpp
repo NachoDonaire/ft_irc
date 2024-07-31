@@ -59,7 +59,7 @@ class Command
 		void	markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
 		void	markChannelPollOut(std::vector<Channel> *clients, std::vector<std::string> dest, std::vector<std::string> params, int type);
 		/* Channel */
-		void				join(const std::vector<std::string>& params, str* userId);
+		void				join(const std::vector<std::string>& params, str* userId, std::string chaName, size_t pos);
 		vectorCh::iterator		getChannel(const str& id);
 		int				stringToEnum(const str& str);
 		Client				*findClientByNick(std::string Nick);
