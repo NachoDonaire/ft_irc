@@ -38,6 +38,7 @@ class Command
 		void	modeOptions(Channel *ch, std::vector<std::string> params);
 		void	modeInstructions(Channel *ch, std::vector<std::string> params);
 		int	plusMode(Channel *ch, std::vector<std::string> params, std::string options);
+		int	prePlusMode(Channel *ch, std::vector<std::string> params);
 		bool	isModeOption(char c);
 		void	quit(std::vector<std::string> params);
 		void	part(std::vector<std::string> params);
@@ -56,7 +57,7 @@ class Command
 		void	markEverything(int cmd, std::vector<std::string> params);
 		void	markEveryThing(str& cmd, vectorStr& params);
 		void	markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
-		void	markChannelPollOut(std::vector<Channel> *clients, std::vector<std::string> dest, std::vector<std::string> params);
+		void	markChannelPollOut(std::vector<Channel> *clients, std::vector<std::string> dest, std::vector<std::string> params, int type);
 		/* Channel */
 		void				join(const std::vector<std::string>& params, str* userId);
 		vectorCh::iterator		getChannel(const str& id);
