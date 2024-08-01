@@ -1082,7 +1082,8 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 		{
 			if (pos + paramsBegin < params.size())
 				return -1;
-			ch->setPassword(" ");
+			std::string psswd;
+			ch->setPassword(psswd);
 		}
 		optOff.push_back(sign);
 		optOff.push_back(opt);
@@ -1113,30 +1114,34 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 		}
 		for (std::vector<int>::iterator it = position.begin(); it != position.end(); it++)
 		{
-			std::vector<std::string*>::iterator nick = ch->getUsers().begin() + *it;
-			if (sign == '+')
+			if (sign == '+' && !ch->isAdmin(arg))
 			{
-				ch->getUsers().erase(nick);
-				ch->getAdmins().push_back(*nick);
+				std::vector<std::string*>::iterator nickIT = ch->getUsers().begin() + *it;
+				ch->getAdmins().push_back(*nickIT);
+				ch->getUsers().erase(nickIT);
 			}
-			else
+			else if (sign == '-' && !ch->isUser(arg))
 			{
-				ch->getAdmins().erase(nick);
-				ch->getUsers().push_back(*nick);
+				std::vector<std::string*>::iterator nickit = ch->getAdmins().begin() + *it;
+				ch->getUsers().push_back(*nickit);
+				ch->getAdmins().erase(nickit);
 			}
 		}
 		for (std::vector<int>::iterator it = positionAd.begin(); it != positionAd.end(); it++)
 		{
-			std::vector<std::string*>::iterator nick = ch->getAdmins().begin() + *it;
-			if (sign == '+')
+			/*if (sign == '+')
 			{
+				std::vector<std::string*>::iterator nick = ch->getUsers().begin() + *it;
 				ch->getUsers().erase(nick);
 				ch->getAdmins().push_back(*nick);
-			}
-			else
+			}*/
+
+			if (sign == '-')
 			{
-				ch->getAdmins().erase(nick);
-				ch->getUsers().push_back(*nick);
+				std::vector<std::string*>::iterator nicke = ch->getAdmins().begin() + *it;
+				std::cout << "nick :::::=> " << **nicke << std::endl;
+				ch->getUsers().push_back(*nicke);
+				ch->getAdmins().erase(nicke);
 			}
 		}
 		ch->printAdminUsers();
@@ -1309,6 +1314,7 @@ void	Command::modeInstructions(Channel *ch, std::vector<std::string> params)
 	{
 		markChannelPollOut(channels, target, parameters, MODE_OK);
 		markEverything(MODE_OK, parameters);
+		launcher->setPollOut(1);
 	}
 /*	if (we.size() > 0)
 	{
@@ -1318,7 +1324,6 @@ void	Command::modeInstructions(Channel *ch, std::vector<std::string> params)
 		markChannelPollOut(channels, target, params, MODE_OK);
 		markEverything(MODE_OK, params);
 	}*/
-	launcher->setPollOut(1);
 }
 	
 void	Command::modeOptions(Channel *ch, std::vector<std::string> params)
