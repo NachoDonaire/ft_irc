@@ -200,8 +200,8 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response = ":" + launcher->getNick() + " JOIN " + params[0];
 			break;
 		case(ERR_BADCHANNELKEY):{
-			response += " " + params[1] + " :Cannot join channel (";
-			Channel *cha = getChannelByName(params[1]);
+			response += " 475 " + params[1] + " :Cannot join channel (";
+			/*Channel *cha = getChannelByName(params[1]);
 			if (cha)
 			{
 				if (cha->getPassword() == "")
@@ -211,6 +211,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			}
 			else
 				response += "+k)";
+			break;}*/
 			break;}
 		case(NOT_REGISTERED):
 			response += " 451 * :You have not registered";
