@@ -153,7 +153,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " 471 " + launcher->getNick() + " " + params[1] + " :This channel is full";
 			break;
 		case(ERR_CHANOPRIVSNEEDED):
-			response += " 482 " + launcher->getNick() + " :You are not a chop";
+			response += " 482 " + launcher->getNick() +  " :You are not a chop";
 			break;
 		case(ERR_USERNOTINCHANNEL):
 			response += " 441 " + launcher->getNick() + " :User not in channel";
@@ -1090,6 +1090,7 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 	else if (opt == 'o')
 	{
 		std::vector<int>	position;
+		std::vector<int>	positionAd;
 		if (pos + paramsBegin >= params.size())
 			return -1;
 		std::string arg = params.at(pos + paramsBegin);
@@ -1103,12 +1104,42 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 				position.push_back(y);
 			}
 		}
+		for (size_t y = 0; y < ch->getAdmins().size(); y++)
+		{
+			if (*(ch->getAdmins().at(y)) == arg)
+			{
+				positionAd.push_back(y);
+			}
+		}
 		for (std::vector<int>::iterator it = position.begin(); it != position.end(); it++)
 		{
 			std::vector<std::string*>::iterator nick = ch->getUsers().begin() + *it;
-			ch->getUsers().erase(nick);
-			ch->getAdmins().push_back(*nick);
+			if (sign == '+')
+			{
+				ch->getUsers().erase(nick);
+				ch->getAdmins().push_back(*nick);
+			}
+			else
+			{
+				ch->getAdmins().erase(nick);
+				ch->getUsers().push_back(*nick);
+			}
 		}
+		for (std::vector<int>::iterator it = positionAd.begin(); it != positionAd.end(); it++)
+		{
+			std::vector<std::string*>::iterator nick = ch->getAdmins().begin() + *it;
+			if (sign == '+')
+			{
+				ch->getUsers().erase(nick);
+				ch->getAdmins().push_back(*nick);
+			}
+			else
+			{
+				ch->getAdmins().erase(nick);
+				ch->getUsers().push_back(*nick);
+			}
+		}
+		ch->printAdminUsers();
 		optOff.push_back(sign);
 		optOff.push_back(opt);
 		argOff.push_back(arg);
