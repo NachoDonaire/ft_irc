@@ -141,8 +141,15 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			}
 			break;
 		case(ERR_NEEDMOREPARAMS):
+		
 			response += " 461 ";
 			response += params[0];
+			if (params.size() > 1)
+			{
+				Channel *ch = getChannelByName(params[1]);
+				if (ch)
+					response += " " + params[1] + " ";
+			}
 			response += " :Not enough or too much params for ";
 			response += params[0];
 			break;
@@ -153,10 +160,10 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " 471 " + launcher->getNick() + " " + params[1] + " :This channel is full";
 			break;
 		case(ERR_CHANOPRIVSNEEDED):
-			response += " 482 " + launcher->getNick() +  " :You are not a chop";
+			response += " 482 " + launcher->getNick() + " " + params[1] +  " :You are not a chop";
 			break;
 		case(ERR_USERNOTINCHANNEL):
-			response += " 441 " + launcher->getNick() + " :User not in channel";
+			response += " 441 " + launcher->getNick() + " " + params[1] + " :User not in channel";
 			break;
 		case(WELCOME):
 			response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
@@ -192,9 +199,19 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		case(JOIN_OK):
 			response = ":" + launcher->getNick() + " JOIN " + params[0];
 			break;
-		case(ERR_BADCHANNELKEY):
-			response = params[1] + " :Cannot join channel (+k)";
-			break;
+		case(ERR_BADCHANNELKEY):{
+			response += " " + params[1] + " :Cannot join channel (";
+			Channel *cha = getChannelByName(params[1]);
+			if (cha)
+			{
+				if (cha->getPassword() == "")
+					response += "-k)";
+				else
+					response += "+k)";
+			}
+			else
+				response += "+k)";
+			break;}
 		case(NOT_REGISTERED):
 			response += " 451 * :You have not registered";
 			break;
