@@ -114,6 +114,14 @@ void	Server::treatRecData(int nread)
 {
 	std::string data(recData);
 	
+	if (data.size() >= 510)
+	{
+		std::cout << "GEPASSSSSSSSSSSSSA --->" << data.size() << std::endl;
+		//recData[data.size() + 2] = '\0';
+		//recData[data.size() + 1] = '\n';
+		//recData[data.size()] = '\r';
+		return ;
+	}
 	if (data.find("\r\n") == std::string::npos)
 		return ;
 	int	i;
@@ -141,6 +149,11 @@ void	Server::checkClientEvents()
 	pos = 0;
 	for (std::vector<struct pollfd>::iterator it = clientSock.begin() + 1; it != clientSock.end(); it++)
 	{
+		std::cout << "SIZE RESPONSEN " << std::endl;
+		std::cout << sit->getResponses().size()  << std::endl;
+		std::cout << it->events << std::endl;
+		std::cout << it->revents << std::endl;
+		std::cout << (it->revents | POLLOUT) << std::endl;
 		if (sit->getOff() == 1)
 		{
 			std::cout << "OOOJ" << std::endl;
@@ -155,10 +168,10 @@ void	Server::checkClientEvents()
 			if (!sit->getOff())
 				out.push_back(pos);
 		}
-		else if (it->revents & POLLIN)
+		if (it->revents & POLLIN)
 		{
 			int	nread;
-			nread = recv(it->fd, this->recData, 512, 0);
+			nread = recv(it->fd, this->recData, 510, 0);
 			if (nread <= 0)
 			{
 				std::cerr << "error at reading, quiting this client" << std::endl;
@@ -166,14 +179,20 @@ void	Server::checkClientEvents()
 					out.push_back(pos);
 			}
 			this->recData[nread] = '\0';
+			//std::cout << recData << std::endl;
+			for (int i = 0; i < nread; i++)
+				write(1, &recData[i], 1);
 			treatRecData(nread);
 			std::cout << "MSG ---> " << nread <<std::endl;
-			std::cout << recData << std::endl;
+			for (int i = 0; i < nread; i++)
+				write(1, &recData[i], 1);
+			//std::cout << recData << std::endl;
 			sit->setMsg(this->recData);
-			std::cout << sit->getMsg() << std::endl;
+			std::cout << sit->getMsg().size() << std::endl;
 		}
-		else if (it->revents & POLLOUT)
+		if (it->revents & POLLOUT)
 		{
+			std::cout << "WEEEEEEEE" << std::endl;
 			std::vector<std::string>	responses = sit->getResponses();
 			std::vector<int>		ncmd = sit->getNCmd();
 			std::vector<int>::iterator	ncmdit = ncmd.begin();
@@ -207,6 +226,10 @@ void	Server::checkClientEvents()
 		std::cout << "GULIII" << std::endl;
 		std::cout << out.size() << std::endl;
 		clientSock.erase(pfd + ((*it) + 1));
+		std::vector<Client>::iterator cla = clients.begin() + *(it);
+
+		std::cout << cla->getNick() << std::endl;
+		
 		clients.erase(cl + (*it));
 	}
 }
@@ -232,6 +255,21 @@ void	Server::handleMessages()
 			std::cout << it->getMsg() << std::endl;
 			this->mark(&(*it), it->getMsg());
 			it->setMsg(std::string(""));
+			/*if (!it->getAuxMsg().empty())
+			{
+				std::string validMsg;
+				if (it->getAuxMsg().size() > 512)
+				{
+					validMsg = it->getAuxMsg().substr(0, 512);
+					it->getAuxMsg().erase(it->getAuxMsg().begin(), it->getAuxMsg().begin() + 512);
+				}
+				else
+				{
+					validMsg = it->getAuxMsg();
+					it->getAuxMsg().clear();
+				}
+				it->setMsg(validMsg);
+			}*/
 		}
 		std::cout << "holaaa !!!!" << std::endl;
 	}

@@ -38,6 +38,7 @@ enum command {
 	ERR_NOSUCHCHANNEL,
 	RPL_TOPIC,
 	ERR_BANNEDFROMCHAN,
+	ERR_ALREADYREGISTRED,
 	ERR_BADCHANNELKEY,
 	ERR_BADCHANMASK,
 	ERR_TOOMANYCHANNELS,
@@ -68,10 +69,12 @@ class Client
 		int		registered;
 		int		status;
 		bool		pollout;
+		int		logFail;
 		int		id;
 		std::vector<std::string>	commands;
 		int		parseStatus;
 		std::string	msg;
+		std::string	auxMsg;
 		//std::vector<std::string>	params;
 		std::map<int, std::vector<std::string> >	cmd;
 		std::string	psswd;
@@ -95,10 +98,13 @@ class Client
 
 		Client(int fd, int i, std::string sp, std::string hn);
 		void	setMsg(std::string message);
+		std::string	getAuxMsg() {return this->auxMsg;};
 		void	setResponse(std::string r) { this->responses.push_back(r);};
 		void	printeito();
 		void	setUser(std::string u) { this->username = u;};
+		void	setAuxMsg(std::string u) { this->auxMsg = u;};
 		void	setRegister(int i) { this->registered = i;};
+		void	setLogFail(int i) { std::cout << "averaveraver" << std::endl;this->logFail = i;};
 		void	setNCmd(int i) { this->cmds.push_back(i);};
 		void	setCommand(int i) { this->command = i;};
 		void	setPsswd(std::string p);
@@ -109,6 +115,7 @@ class Client
 		void	setPollOut(bool n) { this->pollout = n;};
 		int	parseMsg();
 		int	getParseStatus();
+		int	getLogFail(){return this->logFail;};
 		int	getStatus() { return this->status ;};
 		int	getCommand() { return this->command ;};
 		int	getPollOut() { return this->pollout;};
