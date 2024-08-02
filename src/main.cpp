@@ -30,6 +30,7 @@ int main(int argc, char **argv)
 
 	if (irc.launchServer() != 0)
 		return 1;
+	std::cout << "Success finish" << std::endl;
 	return 0;
 
 }

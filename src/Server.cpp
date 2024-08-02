@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #define POLLFD_LIMIT -7
+int SERVER_ON = 1;
 
 Server::Server()
 {
@@ -136,6 +137,13 @@ void	Server::treatRecData(int nread)
 	this->recData[i+3] = '\0';
 }
 
+void handle_sigtstp(int sig) 
+{
+    printf("SIGINT (Ctrl+C) capturado\n");
+    SERVER_ON = 0;
+    //close(server_socket);
+    //exit(0);
+}
 
 void	Server::checkClientEvents()
 {
@@ -153,7 +161,7 @@ void	Server::checkClientEvents()
 		std::cout << sit->getResponses().size()  << std::endl;
 		std::cout << it->events << std::endl;
 		std::cout << it->revents << std::endl;
-		std::cout << (it->revents | POLLOUT) << std::endl;
+		std::cout << (it->revents & (POLLHUP | POLLERR | POLLNVAL)) << std::endl;
 		if (sit->getOff() == 1)
 		{
 			std::cout << "OOOJ" << std::endl;
@@ -307,12 +315,18 @@ void	Server::pollout(int ref)
 
 bool	Server::handleConnections()
 {
-	while (1)
+	struct sigaction sa;
+	sa.sa_handler = handle_sigtstp;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sigaction(SIGINT, &sa, NULL);
+	while (SERVER_ON)
 	{
 		pollout(1);
 		if (poll(clientSock.data(), clientSock.size(), -1) < 0)
 		{
 			std::cerr << "poll() error" << std::endl;
+			//return 1;
 		}
 		if (clientSock.at(0).revents & POLLIN)
 		{
@@ -324,6 +338,7 @@ bool	Server::handleConnections()
 		std::cout << clientSock.size() << std::endl;
 		pollout(0);
 	}
+	return 0;
 }
 
 Server::~Server()
