@@ -63,8 +63,10 @@ bool	Server::launchServer()
 			continue;
 		if (bind(serverSock, rp->ai_addr, rp->ai_addrlen) == 0)
 			break;
+		perror("bind");
 
 		close(serverSock);
+		return 0;
 	}
 
 	freeaddrinfo(result);
@@ -137,7 +139,7 @@ void	Server::treatRecData(int nread)
 	this->recData[i+3] = '\0';
 }
 
-void handle_sigtstp(int sig) 
+void handle_sigint(int sig) 
 {
     printf("SIGINT (Ctrl+C) capturado\n");
     SERVER_ON = 0;
@@ -317,11 +319,7 @@ void	Server::pollout(int ref)
 
 bool	Server::handleConnections()
 {
-	struct sigaction sa;
-	sa.sa_handler = handle_sigtstp;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-	sigaction(SIGINT, &sa, NULL);
+	signal(SIGINT, handle_sigint);
 	while (SERVER_ON)
 	{
 		pollout(1);
@@ -334,6 +332,11 @@ bool	Server::handleConnections()
 		{
 			establishConnection();
 		}
+		/*if (clientSock.at(0).revents & (POLLNVAL))
+		{
+			//std::cout << clientSock.at(0).fd << std::endl;
+		//	std::cout << "JIIISAS" << std::endl;
+		}*/
 		checkClientEvents();
 		handleMessages();
 		std::cout << "SIZE:" << std::endl;
@@ -341,11 +344,16 @@ bool	Server::handleConnections()
 		pollout(0);
 	}
 	std::cout << "clientSock SIZE" << clientSock.size() << std::endl;
-	for (std::vector<struct pollfd>::iterator it = clientSock.begin(); it != clientSock.end(); it++)
+	//for (std::vector<struct pollfd>::iterator it = clientSock.begin(); it != clientSock.end(); it++)
+	for (size_t i = 0; i < clientSock.size(); i++)
 	{
-		std::cout << "uno" << std::endl;
-		close(it->fd);
+		std::cout << "uno" << clientSock.at(i).fd  <<std::endl;
+		if (i == 1)
+			send(clientSock.at(i).fd, "weba", 4, 0);
+		if (close(clientSock.at(i).fd) != 0)
+			perror("WOOOOOW FALLA EL CLOSE");
 	}
+	clientSock.clear();
 	return 0;
 }
 
