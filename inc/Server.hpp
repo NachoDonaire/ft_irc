@@ -5,6 +5,7 @@
 #include <Command.hpp>
 #include <Channel.hpp>
 #include <unistd.h>
+#include <signal.h>
 typedef std::vector<Channel>	vectorCh;
 
 class Server
@@ -28,6 +29,7 @@ class Server
     		~Server();
 		bool		launchServer();
 		void		reallocPlus();
+		//void		handle_sigtstp(int sig);
 		void		pollout(int ref);
 		void		establishConnection();
 		void		checkClientEvents();

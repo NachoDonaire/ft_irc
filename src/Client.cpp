@@ -29,12 +29,25 @@ Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), 
 	registered = 0;
 	msg = "";
 	channels = vectorStr(0);
+	logFail = 23;
 	//pollout = 1;
 }
 
 void	Client::setMsg(std::string message)
 {
-	this->msg = message;
+	this->msg += message;
+	if (message == "")
+	{
+		std::cout << "QEPASAVERGAVALE";
+		this->msg = "";
+	}
+	if (this->msg.size() >= 510)
+	{
+		std::cout << "amos a ver pasa por aca o no?????????????";
+		this->msg.push_back('\r');
+		this->msg.push_back('\n');
+		std::cout << this->msg.size() << std::endl;
+	}
 }
 
 /*

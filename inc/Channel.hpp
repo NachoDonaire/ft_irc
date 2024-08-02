@@ -15,8 +15,8 @@ public:
 	Channel(const std::string id);
    	Channel& 	operator=(const Channel& src);
 	//joinClient
-	void joinClient(std::string* userId, const std::string password, const bool& isAdmin);
-	void joinClient(vectorStr& users, std::string* userId, const bool& isAdmin);
+	void joinClient(std::string &userId, const std::string password, const bool& isAdmin);
+	void joinClient(vectorStr& users, std::string &userId, const bool& isAdmin);
 	//deleteClient
 	void deleteClient(const std::string* userId);
 	void deleteClient(vectorStr& users, const std::string* userId);

@@ -104,6 +104,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			if (launcher->getNick() == "")
 			{
 				launcher->setNick(params[1]);
+				launcher->setLogFail(0);
 				response += " 381 " + launcher->getNick() + " :Nick " + launcher->getNick() + " magnificent set!";
 			}
 			else
@@ -111,6 +112,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 				response = ":" + launcher->getNick() + " NICK " + params[1];
 				//response = std::string(":") + std::string(" NICK ") + params[1];
 				launcher->setNick(params[1]);
+				launcher->setLogFail(0);
 			}
 			break;
 		case(NICK_REPEATED):
@@ -118,6 +120,9 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			break;
 		case(ERR_ERRONEUSNICKNAME):
 			response += " 432 " + launcher->getUser() + " " + params[1];
+			break;
+		case(ERR_ALREADYREGISTRED):
+			response += " 462 " + launcher->getNick() + " :You already registered";
 			break;
 		case(ERR_BADCHANNELID):
 			response +=  " 476 " + launcher->getNick() +  " " + params[1] + " :Bad Channel name";
@@ -141,8 +146,15 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			}
 			break;
 		case(ERR_NEEDMOREPARAMS):
+		
 			response += " 461 ";
 			response += params[0];
+			if (params.size() > 1)
+			{
+				Channel *ch = getChannelByName(params[1]);
+				if (ch)
+					response += " " + params[1] + " ";
+			}
 			response += " :Not enough or too much params for ";
 			response += params[0];
 			break;
@@ -153,10 +165,10 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " 471 " + launcher->getNick() + " " + params[1] + " :This channel is full";
 			break;
 		case(ERR_CHANOPRIVSNEEDED):
-			response += " 482 " + launcher->getNick() + " :You are not a chop";
+			response += " 482 " + launcher->getNick() + " " + params[1] +  " :You are not a chop";
 			break;
 		case(ERR_USERNOTINCHANNEL):
-			response += " 441 " + launcher->getNick() + " :User not in channel";
+			response += " 441 " + launcher->getNick() + " " + params[1] + " :User not in channel";
 			break;
 		case(WELCOME):
 			response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
@@ -192,9 +204,20 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		case(JOIN_OK):
 			response = ":" + launcher->getNick() + " JOIN " + params[0];
 			break;
-		case(ERR_BADCHANNELKEY):
-			response = params[1] + " :Cannot join channel (+k)";
-			break;
+		case(ERR_BADCHANNELKEY):{
+			response += " 475 " + params[1] + " :Cannot join channel (";
+			/*Channel *cha = getChannelByName(params[1]);
+			if (cha)
+			{
+				if (cha->getPassword() == "")
+					response += "-k)";
+				else
+					response += "+k)";
+			}
+			else
+				response += "+k)";
+			break;}*/
+			break;}
 		case(NOT_REGISTERED):
 			response += " 451 * :You have not registered";
 			break;
@@ -240,14 +263,15 @@ void	Command::handleCmd()
 		for (std::vector<std::string>::iterator y = i->second.begin(); y != i->second.end(); y++)
 		{
 			params.push_back(*y);
+			std::cout << "yupii -->> " << *y << std::endl;
 			/*if (params[0] == "NICK")
 				std::cout << *y << std::endl;
 				*/
 		}
 		markAction(params);
+		params.clear();
 		if (launcher->getOff() == 1)
 			return ;
-		params.clear();
 	}
 }
 
@@ -266,9 +290,12 @@ void	Command::markAction(std::vector<std::string> params)
 	*/
 	std::cout << " LO QUE EVALUAMOS " << std::endl;
 	std::cout << cmd << std::endl;
-	for (std::vector<std::string>::iterator it = params.begin() ; it != params.end(); it++)
-		if (*it == "\r\n")
-			params.erase(it);
+	std::cout << cmd.size() << std::endl;
+	std::cout << params.size() << std::endl;
+	std::cout << params.at(params.size() - 1) << std::endl;
+	//for (std::vector<std::string>::iterator it = params.begin() ; it != params.end(); it++)
+	//	if (*it == "\r\n")
+	//		params.erase(it);
 	if (cmd == "PASS")
 		pass(params);
 	else if (cmd == "NICK")
@@ -345,7 +372,7 @@ void	Command::markAction(std::vector<std::string> params)
 		{
 			try
 			{
-				join(params, &launcher->getNick(), *it, pos);
+				join(params, launcher->getNick(), *it, pos);
 				responseType = JOIN_OK;
 				parameters.push_back(*it);
 			}
@@ -385,22 +412,29 @@ void	Command::markAction(std::vector<std::string> params)
 		return ;
 	else
 	{
+		std::cout << "#############" << std::endl;
+		launcher->setPollOut(1);
 		if (!launcher->getRegister())
 		{
-			notRegistered(params);
+			//notRegistered(params);
+			markEverything(BAD_PSSWD, params);
 			return ;
 		}
 		markEverything(CMD_NOTFOUND, params);
-		launcher->setPollOut(1);
 		//launcher->setCommand(CMD_NOTFOUND);
 	}
+	std::cout << "#############" << std::endl;
+	std::cout << "#############" << std::endl;
 /*
 */
 }
 
 void	Command::notRegistered(std::vector<std::string> params)
 {
-	markEverything(NOT_REGISTERED, params);
+	if (launcher->getPsswd() == "")
+		markEverything(BAD_PSSWD, params);
+	else
+		markEverything(NOT_REGISTERED, params);
 	launcher->setPollOut(1);
 }
 
@@ -428,74 +462,57 @@ void	Command::cap(std::vector<std::string> params)
 }
 
 
-std::vector<std::string> Command::split(std::string na, const char *c)
+std::vector<std::string> Command::split(std::string str, const char *delimiter)
 {
-	std::vector<std::string> tokens;
-	std::string		 token;
-	size_t			plus;
-	std::string		n = na;
-	size_t pos;
+	std::vector<std::string> result;
+	std::string token;
+	std::string delimiters(delimiter);
+	std::set<char> delimiterSet(delimiters.begin(), delimiters.end());
 
-	plus = strlen(c);
-	if (n.find(c) == std::string::npos)
-	{
-		tokens.push_back(na);
-	}
-	while ((pos = n.find(c)) != std::string::npos)
-	{
-		token = n.substr(0, pos);
-		tokens.push_back(token);
-		n.erase(0, pos + plus);
-		if ((pos = n.find(c)) == std::string::npos)
-		{
-			token = n.substr(0, pos);
-			tokens.push_back(token);
-			break ;
+	for (std::string::iterator ch = str.begin() ; ch != str.end() ; ch++) {
+		if (delimiterSet.find(*ch) != delimiterSet.end()) {
+			if (!token.empty()) {
+				result.push_back(token);
+				token.clear();
+			}
+		} else {
+			token += *ch;
 		}
 	}
-	return tokens;
+	// Añadir el último token al resultado, si no está vacío.
+	if (!token.empty()) {
+		result.push_back(token);
+	}
+	return result;
 }
 
-std::vector<std::string> Command::split(std::string na, const char c)
+std::vector<std::string> Command::split(std::string str, const char delimiter)
 {
-	std::string n(na);
-	size_t pos;
-	std::vector<std::string> tokens;
-	std::string		 token;
-
-	if (n.find(c) == std::string::npos)
-		tokens.push_back(na);
-	pos = n.find(c);
-	while (n.find(c) && pos != std::string::npos)
-	{
-		token = n.substr(0, pos);
-		tokens.push_back(token);
-		while (n.at(pos) == c)
-		{
-			pos++;
-			if (pos == n.size())
-				break ;
-		}
-		n.erase(0, pos);
-		pos = n.find(c);
-		if (pos == std::string::npos)
-		{
-			token = n.substr(0, pos);
-			tokens.push_back(token);
-			break ;
+	std::vector<std::string> result;
+	std::string token;
+	for (std::string::iterator ch = str.begin() ; ch != str.end() ; ch++) {
+		if (*ch == delimiter) {
+			if (!token.empty()) {
+				result.push_back(token);
+				token.clear();
+			}
+		} else {
+			token += *ch;
 		}
 	}
-	return tokens;
+	// Añadir el último token al resultado, si no está vacío.
+	if (!token.empty()) {
+		result.push_back(token);
+	}
+	return result;
 }
-
-
 //aver que hacer con mas de 512 bytes
 int Command::parseMsg()
 {
 	std::vector<std::string> tokens;
 	std::vector<std::string> parameters;
 
-	if (msg.find("\r\n") == std::string::npos || msg.size() >= 512)
+	if (msg.find("\r\n") == std::string::npos)// && msg.size() < 512)
 	{
 		return (2);
 	}
@@ -514,6 +531,7 @@ int Command::parseMsg()
 
 void	Command::markEverything(int cmd, std::vector<std::string> params)
 {
+	std::cout << "@@@@@@@@@@@@@@@@@@@" << std::endl;
 	std::string response;
 
 	//launcher->setStatus(ERROR);
@@ -533,6 +551,7 @@ void	Command::markEverything(int cmd, std::vector<std::string> params)
 	std::string isempty = response.substr(1, response.size());
 	if (isempty != hostName + "\r\n")
 	{
+		std::cout << "@@@@@@@@@@@@@@@@@@@" << std::endl;
 		launcher->setResponse(response);
 		launcher->setNCmd(launcher->getCommand());
 	}
@@ -570,13 +589,28 @@ int	Command::pass(std::vector<std::string> params)
 int	Command::user(std::vector<std::string> params)
 {
 	std::string response;
+	if(launcher->getRegister())
+	{
+		markEverything(ERR_ALREADYREGISTRED, params);
+		launcher->setPollOut(1);
+		launcher->setLogFail(1);
+		return 3;
+	}
+	if (launcher->getLogFail() == 23)
+	{
+		notRegistered(params);
+		launcher->setLogFail(1);
+		return 3;
+	}
 	if (params.size() < 5)
 	{
 		markEverything(ERR_NEEDMOREPARAMS, params);
 		launcher->setPollOut(1);
+		launcher->setLogFail(1);
 		return 3;
 	}
 	launcher->setUser(params[1]);
+	launcher->setLogFail(0);
 	markEverything(USER, params);
 	welcome(params);
 	return 0;
@@ -589,7 +623,7 @@ int	Command::parseNick(std::string nick)
 	pos = 0;
 	while (pos < nick.size())
 	{
-		if ((nick[pos] >= 'A' && nick[pos] <= '^') || (nick[pos] >= '`' && nick[pos] <= '{') || nick[pos] == '}')
+		if ((nick[pos] >= 'A' && nick[pos] <= '^') || (nick[pos] >= '`' && nick[pos] <= '{') || nick[pos] == '}' || (nick[pos] >= '0' && nick[pos] <= '9') || nick[pos] == '_' || nick[pos] == '-')
 			pos++;
 		else
 			return (0);
@@ -606,18 +640,28 @@ int	Command::nick(std::vector<std::string> params)
 	{
 		markEverything(BAD_PSSWD, params);
 		launcher->setPollOut(1);
+		launcher->setLogFail(3);
+		return 3;
+	}
+	if (launcher->getLogFail() == 1)
+	{
+		markEverything(NOT_REGISTERED, params);
+		launcher->setPollOut(1);
+		launcher->setLogFail(3);
 		return 3;
 	}
 	if (params.size() != 2)
 	{
 		markEverything(ERR_NEEDMOREPARAMS, params);
 		launcher->setPollOut(1);
+		launcher->setLogFail(3);
 		return 3;
 	}
 	if (params[1].size() > 9 || parseNick(params[1]) != 1)
 	{
 		markEverything(ERR_ERRONEUSNICKNAME, params);
 		launcher->setPollOut(1);
+		launcher->setLogFail(3);
 		return 3;
 	}
 	for (std::vector<Client >::iterator it = clients->begin(); it != clients->end(); it++)
@@ -626,6 +670,7 @@ int	Command::nick(std::vector<std::string> params)
 		{
 			markEverything(NICK_REPEATED, params);
 			launcher->setPollOut(1);
+			launcher->setLogFail(3);
 			return 2;
 		}
 	}
@@ -666,14 +711,20 @@ void	Command::quit(std::vector<std::string> params)
 	launcher->setOff(1);
 	std::string nick = launcher->getNick();
 	std::vector<int>	delPos;
+	std::vector<std::string>	partParams;
+	std::string			channelsToLeave;
+
+	partParams.push_back("PART");
 
 	for (std::vector<Channel>::iterator it = channels->begin(); it != channels->end(); it++)
 	{
 		std::cout << "EEEEEEO" << std::endl;
 		std::cout << it->getId() << std::endl;
-		if (it->isAdmin(nick))
+		it->printAdminUsers();
+		if (it->isAdmin(nick) || it->isUser(nick))
 		{
-			int	pos = 0;
+			channelsToLeave += it->getId() + std::string(",");
+			/*int	pos = 0;
 			for (std::vector<std::string *>::iterator et = it->getAdmins().begin(); et != it->getAdmins().end(); et++)
 			{
 				if (**et == nick)
@@ -682,9 +733,9 @@ void	Command::quit(std::vector<std::string> params)
 			}
 			std::vector<std::string *>::iterator del = it->getAdmins().begin() + pos;
 			it->getAdmins().erase(del);
-		}
-		if (it->isUser(nick))
-		{
+			*/
+			//partParams.push_back(it->getId());
+			/*
 			int	pos = 0;
 			for (std::vector<std::string *>::iterator et = it->getUsers().begin(); et != it->getUsers().end(); et++)
 			{
@@ -694,10 +745,18 @@ void	Command::quit(std::vector<std::string> params)
 			}
 			std::vector<std::string *>::iterator del = it->getUsers().begin() + pos;
 			it->getUsers().erase(del);
+			*/
 		}
+		it->printAdminUsers();
 	}
 	std::cout << "Channels size when quitting: "<< channels->size() <<std::endl;
 	markEverything(QUIT, params);
+	if (channelsToLeave.size() > 0)
+	{
+		channelsToLeave.erase(channelsToLeave.begin() + channelsToLeave.size() - 1);
+		partParams.push_back(channelsToLeave);
+		part(partParams);
+	}
 	std::cout << "Channels size when quitting: "<< channels->size() <<std::endl;
 	launcher->setPollOut(1);
 }
@@ -877,7 +936,7 @@ void	Command::part(std::vector<std::string> params)
 	{
 		return msgError(ERR_NEEDMOREPARAMS, params);
 	}
-	std::vector<std::string> chanToLeave = split(params[1], ",");
+	std::vector<std::string> chanToLeave = split(params[1], ',');
 	for (std::vector<std::string>::iterator it = chanToLeave.begin(); it != chanToLeave.end(); it++)
 	{
 		Channel *ch = this->getChannelByName(*it);
@@ -1082,7 +1141,8 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 		{
 			if (pos + paramsBegin < params.size())
 				return -1;
-			ch->setPassword(" ");
+			std::string psswd;
+			ch->setPassword(psswd);
 		}
 		optOff.push_back(sign);
 		optOff.push_back(opt);
@@ -1090,6 +1150,7 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 	else if (opt == 'o')
 	{
 		std::vector<int>	position;
+		std::vector<int>	positionAd;
 		if (pos + paramsBegin >= params.size())
 			return -1;
 		std::string arg = params.at(pos + paramsBegin);
@@ -1103,12 +1164,46 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 				position.push_back(y);
 			}
 		}
+		for (size_t y = 0; y < ch->getAdmins().size(); y++)
+		{
+			if (*(ch->getAdmins().at(y)) == arg)
+			{
+				positionAd.push_back(y);
+			}
+		}
 		for (std::vector<int>::iterator it = position.begin(); it != position.end(); it++)
 		{
-			std::vector<std::string*>::iterator nick = ch->getUsers().begin() + *it;
-			ch->getUsers().erase(nick);
-			ch->getAdmins().push_back(*nick);
+			if (sign == '+' && !ch->isAdmin(arg))
+			{
+				std::vector<std::string*>::iterator nickIT = ch->getUsers().begin() + *it;
+				ch->getAdmins().push_back(*nickIT);
+				ch->getUsers().erase(nickIT);
+			}
+			else if (sign == '-' && !ch->isUser(arg))
+			{
+				std::vector<std::string*>::iterator nickit = ch->getAdmins().begin() + *it;
+				ch->getUsers().push_back(*nickit);
+				ch->getAdmins().erase(nickit);
+			}
 		}
+		for (std::vector<int>::iterator it = positionAd.begin(); it != positionAd.end(); it++)
+		{
+			/*if (sign == '+')
+			{
+				std::vector<std::string*>::iterator nick = ch->getUsers().begin() + *it;
+				ch->getUsers().erase(nick);
+				ch->getAdmins().push_back(*nick);
+			}*/
+
+			if (sign == '-')
+			{
+				std::vector<std::string*>::iterator nicke = ch->getAdmins().begin() + *it;
+				std::cout << "nick :::::=> " << **nicke << std::endl;
+				ch->getUsers().push_back(*nicke);
+				ch->getAdmins().erase(nicke);
+			}
+		}
+		ch->printAdminUsers();
 		optOff.push_back(sign);
 		optOff.push_back(opt);
 		argOff.push_back(arg);
@@ -1278,6 +1373,7 @@ void	Command::modeInstructions(Channel *ch, std::vector<std::string> params)
 	{
 		markChannelPollOut(channels, target, parameters, MODE_OK);
 		markEverything(MODE_OK, parameters);
+		launcher->setPollOut(1);
 	}
 /*	if (we.size() > 0)
 	{
@@ -1287,7 +1383,6 @@ void	Command::modeInstructions(Channel *ch, std::vector<std::string> params)
 		markChannelPollOut(channels, target, params, MODE_OK);
 		markEverything(MODE_OK, params);
 	}*/
-	launcher->setPollOut(1);
 }
 	
 void	Command::modeOptions(Channel *ch, std::vector<std::string> params)
@@ -1350,9 +1445,10 @@ void	Command::mode(std::vector<std::string> params)
 
 
 
-void	Command::join(const std::vector<std::string>& params, str* userId, std::string chaName, size_t pos)
+void	Command::join(const std::vector<std::string>& params, str &userId, std::string chaName, size_t pos)
 {
 	std::cout << "params 1 : " << params[1] << std::endl;
+	std::cout << "user que lanza : " << userId << std::endl;
 	str password;
 	//str name = params[1];
 	if (params.size() == 3)
@@ -1369,19 +1465,26 @@ void	Command::join(const std::vector<std::string>& params, str* userId, std::str
 
 	//for (std::vector<std::string>::iterator it = channels_name.begin(); it != channels_name.end(); it++)
 	//{
-	vectorCh::iterator channel = getChannel(chaName);
-	if (channel == channels->end())
+	//vectorCh::iterator channel = getChannel(chaName);
+	Channel *channel = getChannelByName(chaName);
+	if (!channel)
 	{
 		if ((chaName).at(0) != '&' && (chaName).at(0) != '#')
 			throw std::logic_error("ERR_BADCHANMASK");
 		Channel ch = Channel(chaName);
 		ch.joinClient(userId, password, true);
-		std::cout << ch.nameAdmin(*userId) << std::endl;
+		//std::cout << ch.nameAdmin(userId) << std::endl;
 		channels->push_back(ch);
 
 	}
 	else
+	{
+		std::cout << "PRESHOIN ------> " << std::endl;
+		channel->printAdminUsers();
 		channel->joinClient(userId, password, false);
+		std::cout << "POSTSHOIN ------> " << std::endl;
+		channel->printAdminUsers();
+	}
 	//}
 	//markEverything(JOIN_OK, params);
 	//launcher->setPollOut(1);
@@ -1426,6 +1529,7 @@ int Command::stringToEnum(const str& str) {
         stringToEnumMap["ERR_NOTONCHANNEL"] = ERR_NOTONCHANNEL;
         stringToEnumMap["ERR_BADCHANMASK"] = ERR_BADCHANMASK;
         stringToEnumMap["ERR_NEEDMOREPARAMS"] = ERR_NEEDMOREPARAMS;
+        stringToEnumMap["ERR_ALREADYREGISTRED"] = ERR_ALREADYREGISTRED;
         stringToEnumMap["ERR_UNKNOWNMODE"] = ERR_UNKNOWNMODE;
         stringToEnumMap["ERR_NOSUCHCHANNEL"] = ERR_NOSUCHCHANNEL;
         stringToEnumMap["ERR_CHANOPRIVSNEEDED"] = ERR_CHANOPRIVSNEEDED;

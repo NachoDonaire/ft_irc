@@ -120,7 +120,7 @@ void	Channel::setTopicRestriction(const bool& src)
 	this->topicRestriction = src;
 }
 
-void	Channel::joinClient(std::string* userId, const std::string password, const bool& isAdmin)
+void	Channel::joinClient(std::string &userId, const std::string password, const bool& isAdmin)
 {
 	std::cout << "PASSWORD: " << this->password << std::endl;
 	if (password != this->password)
@@ -153,11 +153,11 @@ void	Channel::printAdminUsers() const
 }
 	
 
-void 	Channel::joinClient(vectorStr& users, std::string *userId, const bool& isAdmin)
+void 	Channel::joinClient(vectorStr& users, std::string &userId, const bool& isAdmin)
 {
 	if (inviteMode == true)
 		throw std::logic_error("ERR_INVITEONLYCHAN");
-	if (*userId == "")
+	if (userId == "")
 		throw std::logic_error("ERR_NEEDMOREPARAMS");
 	if (users.size() + admins.size() >= maxUsers && maxUsers >= 0)
 		throw std::logic_error("ERR_CHANNELISFULL");
@@ -170,7 +170,7 @@ mejor poner esta comprobación en la clase command, cuando es un channel existen
 		throw std::logic_error("The user is already in the Channel");
 */
 
-	isAdmin ? admins.push_back(userId) : users.push_back(userId);
+	isAdmin ? admins.push_back(&userId) : users.push_back(&userId);
 	std::cout << "JOIN CLIENT" << std::endl;
 	printAdminUsers();
 }

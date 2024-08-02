@@ -2,6 +2,7 @@
 #define COMMAND_HPP
 
 #include <Client.hpp>
+#include <set>
 #include <Ircsrv.hpp>
 #include <Channel.hpp>
 typedef std::vector<Channel>	vectorCh;
@@ -64,7 +65,7 @@ class Command
 		void	markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
 		void	markChannelPollOut(std::vector<Channel> *clients, std::vector<std::string> dest, std::vector<std::string> params, int type);
 		/* Channel */
-		void				join(const std::vector<std::string>& params, str* userId, std::string chaName, size_t pos);
+		void				join(const std::vector<std::string>& params, str &userId, std::string chaName, size_t pos);
 		vectorCh::iterator		getChannel(const str& id);
 		int				stringToEnum(const str& str);
 		Client				*findClientByNick(std::string Nick);

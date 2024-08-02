@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #define POLLFD_LIMIT -7
+int SERVER_ON = 1;
 
 Server::Server()
 {
@@ -112,6 +113,18 @@ void	Server::establishConnection()
 
 void	Server::treatRecData(int nread)
 {
+	std::string data(recData);
+	
+	if (data.size() >= 510)
+	{
+		std::cout << "GEPASSSSSSSSSSSSSA --->" << data.size() << std::endl;
+		//recData[data.size() + 2] = '\0';
+		//recData[data.size() + 1] = '\n';
+		//recData[data.size()] = '\r';
+		return ;
+	}
+	if (data.find("\r\n") == std::string::npos)
+		return ;
 	int	i;
 
 	i = nread - 3;
@@ -124,6 +137,13 @@ void	Server::treatRecData(int nread)
 	this->recData[i+3] = '\0';
 }
 
+void handle_sigtstp(int sig) 
+{
+    printf("SIGINT (Ctrl+C) capturado\n");
+    SERVER_ON = 0;
+    //close(server_socket);
+    //exit(0);
+}
 
 void	Server::checkClientEvents()
 {
@@ -137,6 +157,11 @@ void	Server::checkClientEvents()
 	pos = 0;
 	for (std::vector<struct pollfd>::iterator it = clientSock.begin() + 1; it != clientSock.end(); it++)
 	{
+		std::cout << "SIZE RESPONSEN " << std::endl;
+		std::cout << sit->getResponses().size()  << std::endl;
+		std::cout << it->events << std::endl;
+		std::cout << it->revents << std::endl;
+		std::cout << (it->revents & (POLLHUP | POLLERR | POLLNVAL)) << std::endl;
 		if (sit->getOff() == 1)
 		{
 			std::cout << "OOOJ" << std::endl;
@@ -151,10 +176,10 @@ void	Server::checkClientEvents()
 			if (!sit->getOff())
 				out.push_back(pos);
 		}
-		else if (it->revents & POLLIN)
+		if (it->revents & POLLIN)
 		{
 			int	nread;
-			nread = recv(it->fd, this->recData, 512, 0);
+			nread = recv(it->fd, this->recData, 510, 0);
 			if (nread <= 0)
 			{
 				std::cerr << "error at reading, quiting this client" << std::endl;
@@ -162,13 +187,20 @@ void	Server::checkClientEvents()
 					out.push_back(pos);
 			}
 			this->recData[nread] = '\0';
+			//std::cout << recData << std::endl;
+			for (int i = 0; i < nread; i++)
+				write(1, &recData[i], 1);
 			treatRecData(nread);
 			std::cout << "MSG ---> " << nread <<std::endl;
-			std::cout << recData << std::endl;
+			for (int i = 0; i < nread; i++)
+				write(1, &recData[i], 1);
+			//std::cout << recData << std::endl;
 			sit->setMsg(this->recData);
+			std::cout << sit->getMsg().size() << std::endl;
 		}
-		else if (it->revents & POLLOUT)
+		if (it->revents & POLLOUT)
 		{
+			std::cout << "WEEEEEEEE" << std::endl;
 			std::vector<std::string>	responses = sit->getResponses();
 			std::vector<int>		ncmd = sit->getNCmd();
 			std::vector<int>::iterator	ncmdit = ncmd.begin();
@@ -201,7 +233,13 @@ void	Server::checkClientEvents()
 	{
 		std::cout << "GULIII" << std::endl;
 		std::cout << out.size() << std::endl;
+		close(clientSock.at(*it + 1).fd);
+
 		clientSock.erase(pfd + ((*it) + 1));
+		std::vector<Client>::iterator cla = clients.begin() + *(it);
+
+		std::cout << cla->getNick() << std::endl;
+		
 		clients.erase(cl + (*it));
 	}
 }
@@ -220,11 +258,30 @@ void	Server::handleMessages()
 {
 	for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); it++)
 	{
-		if (it->getMsg() != "")
+		if (it->getMsg() != "" && it->getMsg().find("\r\n") != std::string::npos)
 		{
+			std::cout << "serious ?????" << std::endl;
+			std::cout << it->getMsg().find("\r\n") << std::endl;
+			std::cout << it->getMsg() << std::endl;
 			this->mark(&(*it), it->getMsg());
-			it->setMsg("");
+			it->setMsg(std::string(""));
+			/*if (!it->getAuxMsg().empty())
+			{
+				std::string validMsg;
+				if (it->getAuxMsg().size() > 512)
+				{
+					validMsg = it->getAuxMsg().substr(0, 512);
+					it->getAuxMsg().erase(it->getAuxMsg().begin(), it->getAuxMsg().begin() + 512);
+				}
+				else
+				{
+					validMsg = it->getAuxMsg();
+					it->getAuxMsg().clear();
+				}
+				it->setMsg(validMsg);
+			}*/
 		}
+		std::cout << "holaaa !!!!" << std::endl;
 	}
 }
 			
@@ -239,7 +296,10 @@ void	Server::pollout(int ref)
 		for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
 			if (it->getPollOut() == 1)
+			{
+				std::cout << "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP" << std::endl;
 				csit->events = (POLLIN | POLLOUT);
+			}
 			csit++;
 		}
 	}
@@ -257,12 +317,18 @@ void	Server::pollout(int ref)
 
 bool	Server::handleConnections()
 {
-	while (1)
+	struct sigaction sa;
+	sa.sa_handler = handle_sigtstp;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sigaction(SIGINT, &sa, NULL);
+	while (SERVER_ON)
 	{
 		pollout(1);
 		if (poll(clientSock.data(), clientSock.size(), -1) < 0)
 		{
 			std::cerr << "poll() error" << std::endl;
+			//return 1;
 		}
 		if (clientSock.at(0).revents & POLLIN)
 		{
@@ -274,6 +340,13 @@ bool	Server::handleConnections()
 		std::cout << clientSock.size() << std::endl;
 		pollout(0);
 	}
+	std::cout << "clientSock SIZE" << clientSock.size() << std::endl;
+	for (std::vector<struct pollfd>::iterator it = clientSock.begin(); it != clientSock.end(); it++)
+	{
+		std::cout << "uno" << std::endl;
+		close(it->fd);
+	}
+	return 0;
 }
 
 Server::~Server()
