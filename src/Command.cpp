@@ -258,6 +258,7 @@ void	Command::handleCmd()
 		for (std::vector<std::string>::iterator y = i->second.begin(); y != i->second.end(); y++)
 		{
 			params.push_back(*y);
+			std::cout << "yupii -->> " << *y << std::endl;
 			/*if (params[0] == "NICK")
 				std::cout << *y << std::endl;
 				*/
@@ -284,6 +285,9 @@ void	Command::markAction(std::vector<std::string> params)
 	*/
 	std::cout << " LO QUE EVALUAMOS " << std::endl;
 	std::cout << cmd << std::endl;
+	std::cout << cmd.size() << std::endl;
+	std::cout << params.size() << std::endl;
+	std::cout << params.at(params.size() - 1) << std::endl;
 	for (std::vector<std::string>::iterator it = params.begin() ; it != params.end(); it++)
 		if (*it == "\r\n")
 			params.erase(it);
@@ -405,7 +409,10 @@ void	Command::markAction(std::vector<std::string> params)
 	{
 		if (!launcher->getRegister())
 		{
-			notRegistered(params);
+			//notRegistered(params);
+			markEverything(BAD_PSSWD, params);
+			launcher->setPollOut(1);
+			launcher->setOff(1);
 			return ;
 		}
 		markEverything(CMD_NOTFOUND, params);
@@ -446,67 +453,50 @@ void	Command::cap(std::vector<std::string> params)
 }
 
 
-std::vector<std::string> Command::split(std::string na, const char *c)
+std::vector<std::string> Command::split(std::string str, const char *delimiter)
 {
-	std::vector<std::string> tokens;
-	std::string		 token;
-	size_t			plus;
-	std::string		n = na;
-	size_t pos;
+	std::vector<std::string> result;
+	std::string token;
+	std::string delimiters(delimiter);
+	std::set<char> delimiterSet(delimiters.begin(), delimiters.end());
 
-	plus = strlen(c);
-	if (n.find(c) == std::string::npos)
-	{
-		tokens.push_back(na);
-	}
-	while ((pos = n.find(c)) != std::string::npos)
-	{
-		token = n.substr(0, pos);
-		tokens.push_back(token);
-		n.erase(0, pos + plus);
-		if ((pos = n.find(c)) == std::string::npos)
-		{
-			token = n.substr(0, pos);
-			tokens.push_back(token);
-			break ;
+	for (std::string::iterator ch = str.begin() ; ch != str.end() ; ch++) {
+		if (delimiterSet.find(*ch) != delimiterSet.end()) {
+			if (!token.empty()) {
+				result.push_back(token);
+				token.clear();
+			}
+		} else {
+			token += *ch;
 		}
 	}
-	return tokens;
+	// Añadir el último token al resultado, si no está vacío.
+	if (!token.empty()) {
+		result.push_back(token);
+	}
+	return result;
 }
 
-std::vector<std::string> Command::split(std::string na, const char c)
+std::vector<std::string> Command::split(std::string str, const char delimiter)
 {
-	std::string n(na);
-	size_t pos;
-	std::vector<std::string> tokens;
-	std::string		 token;
-
-	if (n.find(c) == std::string::npos)
-		tokens.push_back(na);
-	pos = n.find(c);
-	while (n.find(c) && pos != std::string::npos)
-	{
-		token = n.substr(0, pos);
-		tokens.push_back(token);
-		while (n.at(pos) == c)
-		{
-			pos++;
-			if (pos == n.size())
-				break ;
-		}
-		n.erase(0, pos);
-		pos = n.find(c);
-		if (pos == std::string::npos)
-		{
-			token = n.substr(0, pos);
-			tokens.push_back(token);
-			break ;
+	std::vector<std::string> result;
+	std::string token;
+	for (std::string::iterator ch = str.begin() ; ch != str.end() ; ch++) {
+		if (*ch == delimiter) {
+			if (!token.empty()) {
+				result.push_back(token);
+				token.clear();
+			}
+		} else {
+			token += *ch;
 		}
 	}
-	return tokens;
+	// Añadir el último token al resultado, si no está vacío.
+	if (!token.empty()) {
+		result.push_back(token);
+	}
+	return result;
 }
-
-
 //aver que hacer con mas de 512 bytes
 int Command::parseMsg()
 {
@@ -607,7 +597,7 @@ int	Command::parseNick(std::string nick)
 	pos = 0;
 	while (pos < nick.size())
 	{
-		if ((nick[pos] >= 'A' && nick[pos] <= '^') || (nick[pos] >= '`' && nick[pos] <= '{') || nick[pos] == '}')
+		if ((nick[pos] >= 'A' && nick[pos] <= '^') || (nick[pos] >= '`' && nick[pos] <= '{') || nick[pos] == '}' || (nick[pos] >= '0' && nick[pos] <= '9') || nick[pos] == '_' || nick[pos] == '-')
 			pos++;
 		else
 			return (0);

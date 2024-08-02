@@ -34,7 +34,12 @@ Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), 
 
 void	Client::setMsg(std::string message)
 {
-	this->msg = message;
+	this->msg += message;
+	if (message == "")
+	{
+		std::cout << "QEPASAVERGAVALE";
+		this->msg = "";
+	}
 }
 
 /*

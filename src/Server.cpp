@@ -112,6 +112,10 @@ void	Server::establishConnection()
 
 void	Server::treatRecData(int nread)
 {
+	std::string data(recData);
+	
+	if (data.find("\r\n") == std::string::npos)
+		return ;
 	int	i;
 
 	i = nread - 3;
@@ -166,6 +170,7 @@ void	Server::checkClientEvents()
 			std::cout << "MSG ---> " << nread <<std::endl;
 			std::cout << recData << std::endl;
 			sit->setMsg(this->recData);
+			std::cout << sit->getMsg() << std::endl;
 		}
 		else if (it->revents & POLLOUT)
 		{
@@ -220,11 +225,15 @@ void	Server::handleMessages()
 {
 	for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); it++)
 	{
-		if (it->getMsg() != "")
+		if (it->getMsg() != "" && it->getMsg().find("\r\n") != std::string::npos)
 		{
+			std::cout << "serious ?????" << std::endl;
+			std::cout << it->getMsg().find("\r\n") << std::endl;
+			std::cout << it->getMsg() << std::endl;
 			this->mark(&(*it), it->getMsg());
-			it->setMsg("");
+			it->setMsg(std::string(""));
 		}
+		std::cout << "holaaa !!!!" << std::endl;
 	}
 }
 			
@@ -239,7 +248,10 @@ void	Server::pollout(int ref)
 		for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
 			if (it->getPollOut() == 1)
+			{
+				std::cout << "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP" << std::endl;
 				csit->events = (POLLIN | POLLOUT);
+			}
 			csit++;
 		}
 	}

@@ -2,6 +2,7 @@
 #define COMMAND_HPP
 
 #include <Client.hpp>
+#include <set>
 #include <Ircsrv.hpp>
 #include <Channel.hpp>
 typedef std::vector<Channel>	vectorCh;
