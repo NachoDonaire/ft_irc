@@ -233,6 +233,8 @@ void	Server::checkClientEvents()
 	{
 		std::cout << "GULIII" << std::endl;
 		std::cout << out.size() << std::endl;
+		close(clientSock.at(*it + 1).fd);
+
 		clientSock.erase(pfd + ((*it) + 1));
 		std::vector<Client>::iterator cla = clients.begin() + *(it);
 
@@ -337,6 +339,12 @@ bool	Server::handleConnections()
 		std::cout << "SIZE:" << std::endl;
 		std::cout << clientSock.size() << std::endl;
 		pollout(0);
+	}
+	std::cout << "clientSock SIZE" << clientSock.size() << std::endl;
+	for (std::vector<struct pollfd>::iterator it = clientSock.begin(); it != clientSock.end(); it++)
+	{
+		std::cout << "uno" << std::endl;
+		close(it->fd);
 	}
 	return 0;
 }
