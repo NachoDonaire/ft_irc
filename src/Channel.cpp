@@ -135,6 +135,7 @@ void	Channel::joinClient(std::string &userId, const std::string password, const 
 void	Channel::printAdminUsers() const
 {
 
+	std::cout << "CHANNEL : " << id << std::endl;
 	std::cout << "users : ";
 	std::vector<std::string *>::const_iterator user = users.begin();
 	while (user != users.end())

@@ -1,1 +1,0 @@
-CAP LS 302\r\nPASS kaka\r\nNICK tukerson\r\nUSER tukie 0 * :realname\r\nCAP END\r\n

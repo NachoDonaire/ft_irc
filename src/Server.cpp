@@ -58,14 +58,9 @@ bool	Server::launchServer()
 
 	for (rp = result; rp != NULL; rp = rp->ai_next)
 	{
-		std::cout << "ai_family" << rp->ai_family << std::endl;
-		std::cout << "ai_socktype" << rp->ai_socktype << std::endl;
-		std::cout << "ai_protocol" << rp->ai_protocol << std::endl;
 		serverSock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if (serverSock == -1)
 			continue;
-		std::cout << "ai_addr" << rp->ai_addr << std::endl;
-		std::cout << "ai_addrlen" << rp->ai_addrlen << std::endl;
 		if (bind(serverSock, rp->ai_addr, rp->ai_addrlen) == 0)
 			break;
 		freeaddrinfo(result);
@@ -100,7 +95,6 @@ void	Server::reallocPlus()
 	socket = accept(clientSock.at(0).fd,(struct sockaddr *)&address, &csin_len);
 	if (socket < 0)
 	{
-	//	std::cerr << "cannot accept" << std::endl;
 		std::cerr << "cannot accept: " << strerror(errno) << std::endl;
 		return ;
 	}
@@ -115,7 +109,6 @@ void	Server::establishConnection()
 {
 	std::cout << "Someones connecting" << std::endl;
 	reallocPlus();
-	std::cout << "His position is : " << currentSize - 1 << std::endl;
 }
 
 void	Server::treatRecData(int nread)
@@ -124,10 +117,6 @@ void	Server::treatRecData(int nread)
 	
 	if (data.size() >= 510)
 	{
-		std::cout << "GEPASSSSSSSSSSSSSA --->" << data.size() << std::endl;
-		//recData[data.size() + 2] = '\0';
-		//recData[data.size() + 1] = '\n';
-		//recData[data.size()] = '\r';
 		return ;
 	}
 	if (data.find("\r\n") == std::string::npos)
@@ -146,10 +135,8 @@ void	Server::treatRecData(int nread)
 
 void handle_sigint(int sig) 
 {
-    printf("SIGINT (Ctrl+C) capturado\n");
+    printf("Closing server...");
     SERVER_ON = 0;
-    //close(server_socket);
-    //exit(0);
 }
 
 void	Server::checkClientEvents()
@@ -164,19 +151,8 @@ void	Server::checkClientEvents()
 	pos = 0;
 	for (std::vector<struct pollfd>::iterator it = clientSock.begin() + 1; it != clientSock.end(); it++)
 	{
-		std::cout << "SIZE RESPONSEN " << std::endl;
-		std::cout << sit->getResponses().size()  << std::endl;
-		std::cout << it->events << std::endl;
-		std::cout << it->revents << std::endl;
-		std::cout << (it->revents & (POLLHUP | POLLERR | POLLNVAL)) << std::endl;
 		if (sit->getOff() == 1)
-		{
-			std::cout << "OOOJ" << std::endl;
 			out.push_back(pos);
-			//pos++;
-			//sit++;
-			//continue ;
-		}
 		if (it->revents & (POLLHUP | POLLERR | POLLNVAL))
 		{
 			std::cerr << "client hang, quiting this client" << std::endl;
@@ -194,25 +170,19 @@ void	Server::checkClientEvents()
 					out.push_back(pos);
 			}
 			this->recData[nread] = '\0';
-			//std::cout << recData << std::endl;
 			for (int i = 0; i < nread; i++)
 				write(1, &recData[i], 1);
 			treatRecData(nread);
 			std::cout << "MSG ---> " << nread <<std::endl;
 			for (int i = 0; i < nread; i++)
 				write(1, &recData[i], 1);
-			//std::cout << recData << std::endl;
 			sit->setMsg(this->recData);
-			std::cout << sit->getMsg().size() << std::endl;
 		}
 		if (it->revents & POLLOUT)
 		{
-			std::cout << "WEEEEEEEE" << std::endl;
 			std::vector<std::string>	responses = sit->getResponses();
 			std::vector<int>		ncmd = sit->getNCmd();
 			std::vector<int>::iterator	ncmdit = ncmd.begin();
-			std::cout << "WEEEEEEEE" << std::endl;
-			std::cout << sit->getResponses().size()  << std::endl;
 
 			for(std::vector<std::string>::iterator r = responses.begin(); r != responses.end(); r++)
 			{
@@ -238,27 +208,23 @@ void	Server::checkClientEvents()
 	std::vector<struct pollfd>::iterator pfd = clientSock.begin();
 	for (std::vector<int>::iterator it = out.begin(); it != out.end(); it++)
 	{
-		std::cout << "GULIII" << std::endl;
-		std::cout << out.size() << std::endl;
 		close(clientSock.at(*it + 1).fd);
 
 		clientSock.erase(pfd + ((*it) + 1));
 		std::vector<Client>::iterator cla = clients.begin() + *(it);
 
-		std::cout << cla->getNick() << std::endl;
+		std::cout << "Removing client with nick: " <<  cla->getNick() << std::endl;
 		
 		clients.erase(cl + (*it));
 	}
 }
 
-void	Server::mark(Client *c, std::string msg)//, std::map<int, std::vector<std::string> > cm)
+void	Server::mark(Client *c, std::string msg)
 {
 	Command cd(c, this->getClients(), hostName, msg, psswd, this->getChannels());
 	
 
-	//c->printShait();
 	cd.handleCmd();
-	//cd.printShait();
 }
 
 void	Server::handleMessages()
@@ -267,28 +233,9 @@ void	Server::handleMessages()
 	{
 		if (it->getMsg() != "" && it->getMsg().find("\r\n") != std::string::npos)
 		{
-			std::cout << "serious ?????" << std::endl;
-			std::cout << it->getMsg().find("\r\n") << std::endl;
-			std::cout << it->getMsg() << std::endl;
 			this->mark(&(*it), it->getMsg());
 			it->setMsg(std::string(""));
-			/*if (!it->getAuxMsg().empty())
-			{
-				std::string validMsg;
-				if (it->getAuxMsg().size() > 512)
-				{
-					validMsg = it->getAuxMsg().substr(0, 512);
-					it->getAuxMsg().erase(it->getAuxMsg().begin(), it->getAuxMsg().begin() + 512);
-				}
-				else
-				{
-					validMsg = it->getAuxMsg();
-					it->getAuxMsg().clear();
-				}
-				it->setMsg(validMsg);
-			}*/
 		}
-		std::cout << "holaaa !!!!" << std::endl;
 	}
 }
 			
@@ -304,7 +251,6 @@ void	Server::pollout(int ref)
 		{
 			if (it->getPollOut() == 1)
 			{
-				std::cout << "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP" << std::endl;
 				csit->events = (POLLIN | POLLOUT);
 			}
 			csit++;
@@ -328,35 +274,21 @@ bool	Server::handleConnections()
 	while (SERVER_ON)
 	{
 		pollout(1);
+		// SI POLL FALLA; CHAPAMOS??
 		if (poll(clientSock.data(), clientSock.size(), -1) < 0)
-		{
 			std::cerr << "poll() error" << std::endl;
-			//return 1;
-		}
 		if (clientSock.at(0).revents & POLLIN)
-		{
 			establishConnection();
-		}
-		/*if (clientSock.at(0).revents & (POLLNVAL))
-		{
-			//std::cout << clientSock.at(0).fd << std::endl;
-		//	std::cout << "JIIISAS" << std::endl;
-		}*/
 		checkClientEvents();
 		handleMessages();
-		std::cout << "SIZE:" << std::endl;
-		std::cout << clientSock.size() << std::endl;
+		std::cout << "clientSock SIZE: " << clientSock.size() << std::endl;
 		pollout(0);
 	}
-	std::cout << "clientSock SIZE" << clientSock.size() << std::endl;
-	//for (std::vector<struct pollfd>::iterator it = clientSock.begin(); it != clientSock.end(); it++)
+	std::cout << "Closing all sockets..." << std::endl;
 	for (size_t i = 0; i < clientSock.size(); i++)
 	{
-		std::cout << "uno" << clientSock.at(i).fd  <<std::endl;
-		if (i == 1)
-			send(clientSock.at(i).fd, "weba", 4, 0);
 		if (close(clientSock.at(i).fd) != 0)
-			perror("WOOOOOW FALLA EL CLOSE");
+			perror("close");
 	}
 	clientSock.clear();
 	return 0;
