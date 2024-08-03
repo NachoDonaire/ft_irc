@@ -30,6 +30,7 @@ Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), 
 	msg = "";
 	channels = vectorStr(0);
 	logFail = 23;
+	pollout = -1;
 	//pollout = 1;
 }
 

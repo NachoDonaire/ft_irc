@@ -81,13 +81,14 @@ bool	Server::launchServer()
 
 	listener.fd = serverSock;
 	listener.events = POLLIN;
+	listener.revents = 0;
 	clientSock.push_back(listener);
+	listener_fd = serverSock;
 	return handleConnections();
 }
 
 void	Server::reallocPlus()
 {
-	struct 	pollfd neoclient;
 	int	socket;
 	struct sockaddr_in address;
 	socklen_t csin_len = sizeof(address);
@@ -98,10 +99,13 @@ void	Server::reallocPlus()
 		std::cerr << "cannot accept: " << strerror(errno) << std::endl;
 		return ;
 	}
+	Client cl = Client(socket, currentSize, psswd, hostName);
+	struct 	pollfd neoclient;
 	neoclient.fd = socket;
 	neoclient.events = POLLIN;
+	neoclient.revents = 0;
 	clientSock.push_back(neoclient);
-	clients.push_back(Client(socket, currentSize, psswd, hostName));
+	clients.push_back(cl);
 	currentSize++;
 }
 
@@ -252,6 +256,7 @@ void	Server::pollout(int ref)
 			if (it->getPollOut() == 1)
 			{
 				csit->events = (POLLIN | POLLOUT);
+				csit->revents = 0;
 			}
 			csit++;
 		}
@@ -261,7 +266,10 @@ void	Server::pollout(int ref)
 		for (std::vector<Client>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
 			if (it->getPollOut() == 0)
+			{
 				csit->events = (POLLIN);
+				csit->revents = 0;
+			}
 			csit++;
 		}
 	}

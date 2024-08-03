@@ -15,6 +15,7 @@ class Server
 		std::string	psswd;
 		std::string	hostName;
 		int		currentSize;
+		int		listener_fd;
 		int		portError;
 		char 		recData[512];
 		struct addrinfo	*rp;
