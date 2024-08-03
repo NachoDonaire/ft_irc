@@ -284,7 +284,7 @@ bool	Server::handleConnections()
 		pollout(1);
 		// SI POLL FALLA; CHAPAMOS??
 		if (poll(clientSock.data(), clientSock.size(), -1) < 0)
-			std::cerr << "poll() error" << std::endl;
+			perror("poll");
 		if (clientSock.at(0).revents & POLLIN)
 			establishConnection();
 		checkClientEvents();

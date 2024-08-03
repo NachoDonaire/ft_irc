@@ -31,6 +31,8 @@ Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), 
 	channels = vectorStr(0);
 	logFail = 23;
 	pollout = -1;
+	nickname = "";
+	username = "";
 	//pollout = 1;
 }
 

@@ -322,7 +322,7 @@ void	Command::markAction(std::vector<std::string> params)
 		{
 			try
 			{
-				join(params, launcher->getNick(), *it, pos);
+				join(params, &launcher->getNick(), *it, pos);
 				responseType = JOIN_OK;
 				parameters.push_back(*it);
 			}
@@ -591,6 +591,17 @@ int	Command::nick(std::vector<std::string> params)
 		launcher->setPollOut(1);
 		launcher->setLogFail(3);
 		return 3;
+	}
+	for (std::vector<Client >::iterator it = clients->begin(); it != clients->end(); it++)
+	{
+		std::cout << (*it).getNick() << std::endl;
+		if ((*it).getNick() == params[1])
+		{
+			markEverything(NICK_REPEATED, params);
+			launcher->setPollOut(1);
+			launcher->setLogFail(3);
+			return 2;
+		}
 	}
 	for (std::vector<Client >::iterator it = clients->begin(); it != clients->end(); it++)
 	{
@@ -912,8 +923,9 @@ void	Command::extractFlag(size_t pos)
 int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, char sign, size_t pos)
 {
 	size_t	paramsBegin = 2;
+	int	i = 0;
 
-	while (paramsBegin < params.size() && (params[paramsBegin].find('+') != std::string::npos || params[paramsBegin].find('-') != std::string::npos))
+	while (i < params.size() && ((params[i].find('+') != std::string::npos && params[i].find('+') == 0) || (params[i].find('-') != std::string::npos &&  (params[i].find('-') == 0))))
 		paramsBegin++;
 			
 	for (size_t i = 0; i < params.size() ; i++)
@@ -1042,7 +1054,7 @@ std::string	Command::options(Channel *ch, std::vector<std::string> params)
 	i = 3;
 	while (i < params.size())
 	{
-		while (i < params.size() && (params[i].find('+') != std::string::npos || params[i].find('-') != std::string::npos))
+		while (i < params.size() && ((params[i].find('+') != std::string::npos && params[i].find('+') == 0) || (params[i].find('-') != std::string::npos &&  (params[i].find('-') == 0))))
 			options += params[i++];
 		break;
 		i++;
@@ -1244,7 +1256,7 @@ void	Command::mode(std::vector<std::string> params)
 
 
 
-void	Command::join(const std::vector<std::string>& params, str &userId, std::string chaName, size_t pos)
+void	Command::join(const std::vector<std::string>& params, str *userId, std::string chaName, size_t pos)
 {
 	str password;
 	if (params.size() == 3)
