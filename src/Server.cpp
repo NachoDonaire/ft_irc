@@ -48,7 +48,7 @@ bool	Server::launchServer()
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;       // IPv4
 	hints.ai_socktype = SOCK_STREAM; // TCP
-	hints.ai_flags = AI_PASSIVE;     // Dirección IP local
+	hints.ai_flags = AI_PASSIVE;     // Listen mode
 
 	if (getaddrinfo(NULL, port.c_str(), &hints, &result) != 0)
 	{
@@ -58,14 +58,19 @@ bool	Server::launchServer()
 
 	for (rp = result; rp != NULL; rp = rp->ai_next)
 	{
+		std::cout << "ai_family" << rp->ai_family << std::endl;
+		std::cout << "ai_socktype" << rp->ai_socktype << std::endl;
+		std::cout << "ai_protocol" << rp->ai_protocol << std::endl;
 		serverSock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if (serverSock == -1)
 			continue;
+		std::cout << "ai_addr" << rp->ai_addr << std::endl;
+		std::cout << "ai_addrlen" << rp->ai_addrlen << std::endl;
 		if (bind(serverSock, rp->ai_addr, rp->ai_addrlen) == 0)
 			break;
-		perror("bind");
-
+		freeaddrinfo(result);
 		close(serverSock);
+		perror("bind");
 		return 0;
 	}
 
