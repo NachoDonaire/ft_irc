@@ -30,6 +30,8 @@ enum command {
 	OK_PSSWD,
 	JOIN_OK,
 	MODE_OK,
+	TOPIC_OK,
+	NOTOPIC,
 	BLANK,
 	WHO_BEGIN,
 	WHO_END,

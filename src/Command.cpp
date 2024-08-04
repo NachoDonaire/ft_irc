@@ -58,6 +58,13 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " 341 " + launcher->getNick() + " " + params[1] + " " + params[2];
 
 			break;
+		case(TOPIC_OK):{
+			Channel *ch = getChannelByName(params[1]);
+			response += " 332 " + launcher->getNick() + " " + params[1] + " " + ch->getTopic();
+			break;}
+		case(NOTOPIC):
+			response += " 331 " + launcher->getNick() + " " + params[1] + " :No topic is set";
+			break;
 		case(MODE_OK):
 			response = ":@" + launcher->getNick() + " MODE";
 			for (size_t i = 1; i < params.size(); i++)
@@ -89,9 +96,12 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			}
 			break;
 		case(MODE_WITH_CHANNEL):
-			response += " 324 " + launcher->getNick() + " " + params.at(1) + " :";
+			response += " 324 " + launcher->getNick() + " " + params.at(1);
 			for (size_t i = 2; i < params.size(); i++)
+			{
+				response += " ";
 				response += params.at(i);
+			}
 			break;
 		case(ERR_NOTONCHANNEL):{
 			std::string chname;
@@ -118,7 +128,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			}
 			else
 			{
-				response = ":" + launcher->getNick() + " NICK " + params[1];
+				response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " NICK :" + params[1];
 				launcher->setNick(params[1]);
 				launcher->setLogFail(0);
 			}
@@ -211,7 +221,7 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response = ":" + launcher->getNick() + " JOIN " + params[0];
 			break;
 		case(ERR_BADCHANNELKEY):
-			response += " 475 " + params[1] + " :Cannot join channel (";
+			response += " 475 " + launcher->getNick() + " " + params[1] + " :Cannot join channel (";
 			break;
 		case(NOT_REGISTERED):
 			response += " 451 * :You have not registered";
@@ -292,6 +302,18 @@ void	Command::markAction(std::vector<std::string> params)
 			return msgError(ERR_NOSUCHCHANNEL, params);
 		part(params);
 	}
+	else if  (cmd == "TOPIC")
+	{
+		if (!launcher->getRegister())
+		{
+			notRegistered(params);
+			return ;
+		}
+		if (channels->size() == 0)
+			return msgError(ERR_NOSUCHCHANNEL, params);
+		topic(params);
+	}
+
 	else if  (cmd == "INVITE")
 	{
 		if (!launcher->getRegister())
@@ -376,10 +398,10 @@ void	Command::markAction(std::vector<std::string> params)
 		launcher->setPollOut(1);
 		return ;
 	}
-	/*else if (cmd == "WHO")
+	else if (cmd == "WHO")
 	{
-
-	}*/
+		return ;
+	}
 	else if (cmd == "")
 		return ;
 	else
@@ -835,7 +857,52 @@ void	Command::markChannel(Channel *ch, std::vector<std::string> params)
 	std::cout << "KICK REMOVING AND MARKING" << std::endl;
 
 }
-		
+
+void	Command::topic(std::vector<std::string> params)
+{
+	if (params.size() <= 1)
+		return msgError(ERR_NEEDMOREPARAMS, params);
+	Channel *ch = this->getChannelByName(params[1]);
+	if (!ch)
+		return msgError(ERR_NOSUCHCHANNEL, params);
+	if (ch->getTopicRestriction())
+	{
+		if (!ch->isAdmin(launcher->getNick()))
+		{
+			if (ch->isUser(launcher->getNick()))
+				return msgError(ERR_CHANOPRIVSNEEDED, params);
+			else
+				return msgError(ERR_NOTONCHANNEL, params);
+		}
+	}
+	if (!ch->isAdmin(launcher->getNick()) && !ch->isUser(launcher->getNick()))
+		return msgError(ERR_NOTONCHANNEL, params);
+	std::string topicmsg("");
+	for (size_t i = 2; i < params.size(); i++)
+	{
+		topicmsg += " ";
+		topicmsg += params[i];
+	}
+	std::vector<std::string> chans;
+
+	if (params.size() == 2)
+	{
+		if (ch->getTopic().empty())
+		{
+			markEverything(NOTOPIC, params);
+			launcher->setPollOut(1);
+			return ;
+		}
+	}
+	if (topicmsg != "")
+		ch->setTopic(topicmsg);
+	chans.push_back(params[1]);
+	markChannelPollOut(channels, chans, params, TOPIC_OK);
+	markEverything(TOPIC_OK, params);
+	launcher->setPollOut(1);
+}
+
+
 void	Command::part(std::vector<std::string> params)
 {
 	int	ad;
@@ -942,13 +1009,12 @@ void	Command::kick(const std::vector<std::string>& params)
 	{
 		if (ch->isUser(launcher->getNick()))
 			return msgError(ERR_CHANOPRIVSNEEDED, params);
-		return msgError(ERR_USERNOTINCHANNEL, params);
+		return msgError(ERR_NOTONCHANNEL, params);
 	}
 	if (!ch->isAdmin(params[2]) && !ch->isUser(params[2]))
 	{
 		return msgError(ERR_USERNOTINCHANNEL, params);
 	}
-
 	std::vector<std::string> chans = split(params[1], ',');
 	std::vector<std::string> users = split(params[2], ',');
 	std::vector<std::string> parameters;
@@ -1059,7 +1125,7 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 	}
 	else if (opt == 't')
 	{
-		sign == '+' ? ch->setTopicRestriction(0) : ch->setTopicRestriction(1);
+		sign == '+' ? ch->setTopicRestriction(1) : ch->setTopicRestriction(0);
 		optOff.push_back(sign);
 		optOff.push_back(opt);
 	}
@@ -1234,22 +1300,7 @@ void	Command::modeInstructions(Channel *ch, std::vector<std::string> params)
 			launcher->setPollOut(1);
 			return ;
 		}
-		/*std::cout << "PRE_CONSTRUCTION: " << std::endl;
-		for (size_t i = 0; i < argOff.size(); i++)
-			std::cout << argOff[i] << std::endl;
-		std::cout << "PRE_CONSTRUCTION: " << std::endl;
-		for (size_t i = 0; i < optOff.size(); i++)
-			std::cout << optOff[i] << std::endl;
-			*/
 		status = plusMode(ch, params, opt.at(i++), sign, pos);
-		/*
-		std::cout << "CONSTRUCTION: " << std::endl;
-		for (size_t i = 0; i < argOff.size(); i++)
-			std::cout << argOff[i] << std::endl;
-		std::cout << "CONSTRUCTION: " << std::endl;
-		for (size_t i = 0; i < optOff.size(); i++)
-			std::cout << optOff[i] << std::endl;
-			*/
 		if (status == -1)
 		{
 			markEverything(ERR_NEEDMOREPARAMS, params);
@@ -1293,24 +1344,21 @@ void	Command::modeInstructions(Channel *ch, std::vector<std::string> params)
 	
 void	Command::modeOptions(Channel *ch, std::vector<std::string> params)
 {
+	std::stringstream ss;
 	if (params.size() == 2)
 	{
 		if (ch->getPassword() != "")
-			params.push_back("+k");
-		else
-			params.push_back("-k");
+			params.push_back("+k " + ch->getPassword());
 		if (ch->getMaxUsers() > 0)
-			params.push_back("+l");
-		else
-			params.push_back("-l");
+		{
+    			ss << ch->getMaxUsers();
+    			std::string maxusers = ss.str();
+			params.push_back("+l " + maxusers);
+		}
 		if (ch->getInviteMode())
 			params.push_back("+i");
-		else
-			params.push_back("-i");
 		if (ch->getTopicRestriction())
 			params.push_back("+t");
-		else
-			params.push_back("-t");
 		markEverything(MODE_WITH_CHANNEL, params);
 		launcher->setPollOut(1);
 		return ;
@@ -1413,6 +1461,8 @@ int Command::stringToEnum(const str& str) {
         stringToEnumMap["KICK"] = KICK;
         stringToEnumMap["INVITE"] = INVITE;
         stringToEnumMap["MODE"] = MODE;
+        stringToEnumMap["TOPIC_OK"] = TOPIC_OK;
+        stringToEnumMap["NOTOPIC"] = NOTOPIC;
         stringToEnumMap["MODE_WITH_CHANNEL"] = MODE_WITH_CHANNEL;
         stringToEnumMap["ERR_NOTONCHANNEL"] = ERR_NOTONCHANNEL;
         stringToEnumMap["ERR_USERONCHANNEL"] = ERR_USERONCHANNEL;

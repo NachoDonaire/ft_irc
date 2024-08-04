@@ -34,6 +34,7 @@ class Command
 		void	extractFlag(size_t pos);
 		bool	oFlagChecker(std::string option);
 		void	cap(std::vector<std::string> params);
+		void	topic(std::vector<std::string> params);
 		void	who(std::vector<std::string> params);
 		void	invite(std::vector<std::string> params);
 		int	nick(std::vector<std::string> params);
