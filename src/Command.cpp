@@ -104,13 +104,8 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			}
 			break;
 		case(ERR_NOTONCHANNEL):{
-			std::string chname;
+			std::string chname = params.at(params.size() - 1);
 
-			for (std::vector<std::string>::iterator it = params.begin(); it != params.end(); it++)
-			{
-				if (it->find("#") == 0)
-					chname = *it;
-			}	
 			response += " 442 " + launcher->getNick() + " " + chname + " :You are not in this channel";
 			break;}
 		case(ERR_INVITEONLYCHAN):
@@ -174,6 +169,9 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		case(ERR_NOSUCHCHANNEL):
 			response += " 403 " + launcher->getNick() + " :No such a channel";
 			break;
+		case(ERR_NOSUCHNICK):
+			response += " 401 " + launcher->getNick() + " :" + params[0] + " No such nick";
+			break;
 		case(ERR_CHANNELISFULL):
 			response += " 471 " + launcher->getNick() + " " + params[1] + " :This channel is full";
 			break;
@@ -195,20 +193,24 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			launcher->setOff(1);
 			break;
 		case(PRIVMSG):
+			std::cout << "EORESP " << params.size()  <<std::endl;
 			response = ":";
-			if (params[1].at(0) == '#' || params[1].at(0) == '&')
+			if (params[0].find('#') == 0 || params[0].find('&') == 0)
 			{	
-				Channel *ch = getChannelByName(params[1]);
+				Channel *ch = getChannelByName(params[0]);
 				if (ch->isAdmin(launcher->getNick()))
 					response += "@";
 			}
 			response += launcher->getNick();
-			response += " PRIVMSG " + params[1] +  " ";
-			for (size_t  i = 2; i < params.size(); i++)
+			response += " PRIVMSG " + params[0] +  " ";
+			if (params.size() == 1)
+				break ;
+			for (size_t  i = 1; i < params.size(); i++)
 			{
 				response += params[i];
 				response += " ";
 			}
+			std::cout << "EORESP" << std::endl;
 			break;
 		case(WHO_BEGIN):
 			response += " 352 " + launcher->getNick() + " " + params[1] + " " +  launcher->getUser() + " " +  hostName + " " +  launcher->getNick() + " H :0 " + launcher->getUser();
@@ -674,6 +676,7 @@ Client	*Command::findClientByNick(std::string nick)
 		if (cl->getNick() == nick)
 			return &(*cl);
 	}
+	std::cout << "FINDCLIENT" << std::endl; 
 	return (&(*clients->end()));
 }
 
@@ -733,33 +736,80 @@ void	Command::markie(Client *c, std::vector<std::string> params, int cmd)
 
 void	Command::markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params, int type)
 {
+	std::cout << "BEGIN OF CLIENT" << std::endl;
 	for (size_t y = 0; y < dest.size(); y++)
 	{
+		std::cout << dest[y] << std::endl;
+		if (findClientByNick(dest[y]) == &(*clients->end()) && dest[y].find('#') != 0)
+		{
+			std::vector<std::string> parameters;
+			parameters.push_back(dest[y]);
+			markEverything(ERR_NOSUCHNICK, parameters);
+			parameters.clear();
+			launcher->setPollOut(1);
+			continue ;
+		}
 		for (size_t i = 0; i < clients->size(); i++)
 		{
+			std::cout << "1" << std::endl;
 			if (dest[y] == clients->at(i).getNick())
 			{
-				markie(&clients->at(i), params, type);
+				std::cout << "SHEGA?" << std::endl;
+				std::vector<std::string> parameters;
+				parameters.push_back(dest[y]);
+				for (size_t i = 2; i < params.size(); i++)
+					parameters.push_back(params[i]);
+				if (type == PRIVMSG)
+					markie(&clients->at(i), parameters, type);
+				else
+					markie(&clients->at(i), params, type);
 			}
+				
 		}
 	}
+	std::cout << "END OF CLIENT" << std::endl;
 }
 
 void	Command::markChannelPollOut(std::vector<Channel> *ch, std::vector<std::string> dest, std::vector<std::string> params, int type)
 {
 	for (size_t y = 0; y < dest.size(); y++)
 	{
+		if ((dest[y].find('#') == 0 || dest[y].find('&') == 0) && !getChannelByName(dest[y]))
+		{
+			markEverything(ERR_NOSUCHCHANNEL, params);
+			launcher->setPollOut(1);
+			continue ;
+		}
 		for (size_t i = 0; i < ch->size(); i++)
 		{
 			if (dest[y] == ch->at(i).getId())
 			{
+				//if (((!ch->at(i).isUser(dest[y]) && !ch->at(i).isAdmin(dest[y])) || 
+				if (((!ch->at(i).isUser(launcher->getNick()) && !ch->at(i).isAdmin(launcher->getNick()))) && type == PRIVMSG)
+				{
+					std::cout << "PASA POR PRIVMSG SIN SERLO : " << dest[y] << " " << launcher->getNick() << std::endl;
+					params.push_back(ch->at(i).getId());
+					markEverything(ERR_NOTONCHANNEL, params);
+					launcher->setPollOut(1);
+					continue ;
+				}
 				for  (size_t j = 0; j < ch->at(i).getUsers().size(); j++)
 				{
 					if (*(ch->at(i).getUsers().at(j)) == launcher->getNick())
 						continue ;
+				
 					Client *cl = findClientByNick(*(ch->at(i).getUsers().at(j)));
 					if (cl && cl != &(*(clients->end())))
-						markie(cl, params, type);
+					{
+						std::vector<std::string> parameters;
+						parameters.push_back(dest[y]);
+						for (size_t i = 2; i < params.size(); i++)
+							parameters.push_back(params[i]);
+						if (type == PRIVMSG)
+							markie(cl, parameters, type);
+						else
+							markie(cl, params, type);
+					}
 				}
 				for  (size_t j = 0; j < ch->at(i).getAdmins().size(); j++)
 				{
@@ -767,7 +817,16 @@ void	Command::markChannelPollOut(std::vector<Channel> *ch, std::vector<std::stri
 						continue ;
 					Client *cl = findClientByNick(*(ch->at(i).getAdmins().at(j)));
 					if (cl && cl != &(*(clients->end())))
-						markie(cl, params, type);
+					{
+						std::vector<std::string> parameters;
+						parameters.push_back(dest[y]);
+						for (size_t i = 2; i < params.size(); i++)
+							parameters.push_back(params[i]);
+						if (type == PRIVMSG)
+							markie(cl, parameters, type);
+						else
+							markie(cl, params, type);
+					}
 				}
 			}
 		}
@@ -872,11 +931,17 @@ void	Command::topic(std::vector<std::string> params)
 			if (ch->isUser(launcher->getNick()))
 				return msgError(ERR_CHANOPRIVSNEEDED, params);
 			else
+			{
+				params.push_back(ch->getId());
 				return msgError(ERR_NOTONCHANNEL, params);
+			}
 		}
 	}
 	if (!ch->isAdmin(launcher->getNick()) && !ch->isUser(launcher->getNick()))
+	{
+		params.push_back(ch->getId());
 		return msgError(ERR_NOTONCHANNEL, params);
+	}
 	std::string topicmsg("");
 	for (size_t i = 2; i < params.size(); i++)
 	{
@@ -924,6 +989,7 @@ void	Command::part(std::vector<std::string> params)
 		std::vector<std::string*> admins = ch->getAdmins();
 		if  (!ch->isUser(launcher->getNick()) && !ch->isAdmin(launcher->getNick()))
 		{
+			params.push_back(ch->getId());
 			msgError(ERR_NOTONCHANNEL, params);
 			continue ;
 		}
@@ -991,7 +1057,7 @@ void	Command::invite(std::vector<std::string> params)
 	markClientsPollOut(clients, target, params, INVITE);
 }
 
-void	Command::kick(const std::vector<std::string>& params)
+void	Command::kick(std::vector<std::string>& params)
 {
 	size_t	i;
 	size_t	pos;
@@ -1009,6 +1075,7 @@ void	Command::kick(const std::vector<std::string>& params)
 	{
 		if (ch->isUser(launcher->getNick()))
 			return msgError(ERR_CHANOPRIVSNEEDED, params);
+		params.push_back(ch->getId());
 		return msgError(ERR_NOTONCHANNEL, params);
 	}
 	if (!ch->isAdmin(params[2]) && !ch->isUser(params[2]))
@@ -1207,7 +1274,7 @@ int Command::plusMode(Channel *ch, std::vector<std::string> params, char opt, ch
 }
 
 
-std::string	Command::options(Channel *ch, std::vector<std::string> params)
+std::string	Command::options(std::vector<std::string> params)
 {
 	size_t	i;
 	std::string options(params[2]);
@@ -1277,7 +1344,7 @@ std::string Command::rmErrorFlags(std::string opt, std::vector<int> rm)
 
 void	Command::modeInstructions(Channel *ch, std::vector<std::string> params)
 {
-	std::string	opt = options(ch, params);
+	std::string	opt = options(params);
 	std::vector<int>	we;
 	size_t		i;
 	char		sign;

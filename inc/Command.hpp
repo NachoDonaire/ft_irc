@@ -44,13 +44,13 @@ class Command
 		void	modeOptions(Channel *ch, std::vector<std::string> params);
 		void	modeInstructions(Channel *ch, std::vector<std::string> params);
 		int	plusMode(Channel *ch, std::vector<std::string> params, char opt, char sign, size_t pos);
-		std::string options(Channel *ch, std::vector<std::string> params);
+		std::string options(std::vector<std::string> params);
 		bool	isModeOption(char c);
 		void	quit(std::vector<std::string> params);
 		void	part(std::vector<std::string> params);
 		void	handleCmd();
 		Channel	*getChannelByName(std::string name);
-		void	kick(const std::vector<std::string>& params);
+		void	kick(std::vector<std::string>& params);
 		void	kickProcessOne(const std::vector<std::string>& params);
 		void	mode(std::vector<std::string> params);
 		std::string	rmErrorFlags(std::string opt, std::vector<int> rm);

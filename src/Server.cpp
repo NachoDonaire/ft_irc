@@ -148,8 +148,12 @@ void	Server::treatRecData(int nread)
 
 void handle_sigint(int sig) 
 {
-    printf("Closing server...");
-    SERVER_ON = 0;
+
+	if (sig == SIGINT)
+	{
+		printf("Closing server...");
+		SERVER_ON = 0;
+	}
 }
 
 void	Server::checkClientEvents()

@@ -9,7 +9,7 @@ NAME = ircserv
 DSRC = $(addprefix $(SRDIR), $(SRCS))
 ALLC = $(DSRC)
 OBJS = $(DSRC:.cpp=.o)
-CXX = c++ -Wall -Werror -std=c++98 -I inc
+CXX = c++ -Wall -Werror -Wextra  -std=c++98 -I inc
 RM = rm -rf
 
 all: $(NAME)
