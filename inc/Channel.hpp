@@ -46,6 +46,7 @@ public:
 	str		getId() const;
 	bool		isAdmin(std::string nick);
 	bool		isUser(std::string nick);
+	bool		isInvited(std::string &nick);
 	str		getPassword() const;
 	int 		getMaxUsers() const;
 	int 		parseChannelId(str src) const;
@@ -53,6 +54,7 @@ public:
 	bool		getTopicRestriction() const;
 
 	void		setUsers(vectorStr src);
+	void		setGuest(std::string *name);
 	void		setAdmins(vectorStr src);
 	void		setTopic(str src);
 	void		setId(str src);
@@ -67,6 +69,7 @@ private:
 	//cambio prov a &str
 	vectorStr	users;
 	vectorStr	admins;
+	vectorStr	invitations;
 	std::string 	topic;
 	std::string 	id;
 	std::string 	password;

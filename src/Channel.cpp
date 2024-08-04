@@ -152,11 +152,45 @@ void	Channel::printAdminUsers() const
 	}
 	std::cout << std::endl;
 }
-	
+
+void	Channel::setGuest(std::string *name)
+{
+	for (std::vector<std::string*>::iterator it = invitations.begin(); it != invitations.end(); it++)
+	{
+		if (**it == *name)
+			return ;
+	}
+	invitations.push_back(name);
+}
+
+bool	Channel::isInvited(std::string &userId)
+{
+	std::vector<int> del;
+	bool		rtr;
+
+	rtr = 0;
+	for (size_t i = 0; i < invitations.size(); i++)
+	{
+		if (userId == *invitations.at(i))
+		{
+			del.push_back(i);
+			rtr = 1;
+		}
+	}
+	for (size_t i = 0; i < del.size(); i++)
+	{
+		std::vector<std::string *>::iterator guest = invitations.begin() + del.at(i);
+		invitations.erase(guest);
+	}
+	return rtr;
+}
+
+			
+
 
 void 	Channel::joinClient(vectorStr& users, std::string &userId, const bool& isAdmin)
 {
-	if (inviteMode == true)
+	if (inviteMode == true && !isInvited(userId))
 		throw std::logic_error("ERR_INVITEONLYCHAN");
 	if (userId == "")
 		throw std::logic_error("ERR_NEEDMOREPARAMS");

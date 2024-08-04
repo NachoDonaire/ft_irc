@@ -35,6 +35,7 @@ class Command
 		bool	oFlagChecker(std::string option);
 		void	cap(std::vector<std::string> params);
 		void	who(std::vector<std::string> params);
+		void	invite(std::vector<std::string> params);
 		int	nick(std::vector<std::string> params);
 		int	parseNick(std::string);
 		int	user(std::vector<std::string> params);
@@ -49,6 +50,7 @@ class Command
 		void	handleCmd();
 		Channel	*getChannelByName(std::string name);
 		void	kick(const std::vector<std::string>& params);
+		void	kickProcessOne(const std::vector<std::string>& params);
 		void	mode(std::vector<std::string> params);
 		std::string	rmErrorFlags(std::string opt, std::vector<int> rm);
 		std::vector<std::string>	rmErrorArgs(std::vector<std::string> params, std::vector<int> rm, size_t p);
@@ -62,7 +64,7 @@ class Command
 		void	markie(Client *c, std::vector<std::string> params, int cmd);
 		void	markEverything(int cmd, std::vector<std::string> params);
 		void	markEveryThing(str& cmd, vectorStr& params);
-		void	markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params);
+		void	markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params, int type);
 		void	markChannelPollOut(std::vector<Channel> *clients, std::vector<std::string> dest, std::vector<std::string> params, int type);
 		/* Channel */
 		void				join(const std::vector<std::string>& params, str &userId, std::string chaName, size_t pos);

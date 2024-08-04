@@ -54,6 +54,10 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 		case(OK_PSSWD):
 			response += "";
 			break;
+		case(INVITE):
+			response += " 341 " + launcher->getNick() + " " + params[1] + " " + params[2];
+
+			break;
 		case(MODE_OK):
 			response = ":@" + launcher->getNick() + " MODE";
 			for (size_t i = 1; i < params.size(); i++)
@@ -75,9 +79,9 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			break;
 		case(PART):
 			response = ":" + launcher->getNick() + "!" + launcher->getUser() + "@" + hostName + " PART " + params[1];
-			if (params.size() > 2)
+			if (params.size() > 3)
 			{
-				for (std::vector<std::string>::iterator it = params.begin() + 2; it != params.end(); it++)
+				for (std::vector<std::string>::iterator it = params.begin() + 3; it != params.end(); it++)
 				{
 					response += " ";
 					response += *it;
@@ -89,9 +93,16 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			for (size_t i = 2; i < params.size(); i++)
 				response += params.at(i);
 			break;
-		case(ERR_NOTONCHANNEL):
-			response += " 442 " + launcher->getNick() + " " + params[1] + " :You are not in this channel";
-			break;
+		case(ERR_NOTONCHANNEL):{
+			std::string chname;
+
+			for (std::vector<std::string>::iterator it = params.begin(); it != params.end(); it++)
+			{
+				if (it->find("#") == 0)
+					chname = *it;
+			}	
+			response += " 442 " + launcher->getNick() + " " + chname + " :You are not in this channel";
+			break;}
 		case(ERR_INVITEONLYCHAN):
 			response += " 473 " + launcher->getNick() + " " + params[1]  + " :Cannot join the channel (+i)";
 			break;
@@ -160,7 +171,10 @@ std::string	Command::responseGenerator(int msg, std::vector<std::string> params)
 			response += " 482 " + launcher->getNick() + " " + params[1] +  " :You are not a chop";
 			break;
 		case(ERR_USERNOTINCHANNEL):
-			response += " 441 " + launcher->getNick() + " " + params[1] + " :User not in channel";
+			response += " 441 " + launcher->getNick() + " " + params[1] + " :User not on channel";
+			break;
+		case(ERR_USERONCHANNEL):
+			response += " 443 " + launcher->getNick() + " " + params[2] + " :User already on channel";
 			break;
 		case(WELCOME):
 			response += " 001 " + launcher->getNick() + " :Welcome to ircserv !";
@@ -256,6 +270,7 @@ void	Command::markAction(std::vector<std::string> params)
 {
 	std::string cmd = params[0];
 
+	std::cout << "EVALUATING : " << params[0] << std::endl;
 	if (cmd == "PASS")
 		pass(params);
 	else if (cmd == "NICK")
@@ -277,6 +292,17 @@ void	Command::markAction(std::vector<std::string> params)
 			return msgError(ERR_NOSUCHCHANNEL, params);
 		part(params);
 	}
+	else if  (cmd == "INVITE")
+	{
+		if (!launcher->getRegister())
+		{
+			notRegistered(params);
+			return ;
+		}
+		if (channels->size() == 0)
+			return msgError(ERR_NOSUCHCHANNEL, params);
+		invite(params);
+	}
 	else if (cmd == "PRIVMSG")
 	{
 		if (!launcher->getRegister())
@@ -288,11 +314,13 @@ void	Command::markAction(std::vector<std::string> params)
 	}
 	else if (cmd == "KICK")
 	{
+	std::cout << "WEEEEEEEEBA" << std::endl;
 		if (!launcher->getRegister())
 		{
 			notRegistered(params);
 			return ;
 		}
+		std::cout << "WEEEEEEEEBA" << std::endl;
 		kick(params);
 	}
 	else if (cmd == "MODE")
@@ -681,7 +709,7 @@ void	Command::markie(Client *c, std::vector<std::string> params, int cmd)
 	c->setPollOut(1);
 }
 
-void	Command::markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params)
+void	Command::markClientsPollOut(std::vector<Client> *clients, std::vector<std::string> dest, std::vector<std::string> params, int type)
 {
 	for (size_t y = 0; y < dest.size(); y++)
 	{
@@ -689,7 +717,7 @@ void	Command::markClientsPollOut(std::vector<Client> *clients, std::vector<std::
 		{
 			if (dest[y] == clients->at(i).getNick())
 			{
-				markie(&clients->at(i), params, PRIVMSG);
+				markie(&clients->at(i), params, type);
 			}
 		}
 	}
@@ -739,7 +767,7 @@ void	Command::privmsg(std::vector<std::string> params)
 		return ;
 	}
 	dest = split(params[1], ",");
-	markClientsPollOut(clients, dest, params);
+	markClientsPollOut(clients, dest, params, PRIVMSG);
 	markChannelPollOut(channels, dest, params, PRIVMSG);
 }
 
@@ -768,32 +796,44 @@ void Command::msgError(int type, std::vector<std::string> params)
 void	Command::markChannel(Channel *ch, std::vector<std::string> params)
 {
 	//ch->printAdminUsers();
+	int	us;
+	int	ad;
+	int	i;
 	
+	us = -1;
+	ad = -1;
+	i = 0;
+	std::cout << "KICK REMOVING AND MARKING" << std::endl;
+	ch->printAdminUsers();
 	for (std::vector<std::string*>::iterator u = ch->getUsers().begin() ; u != ch->getUsers().end(); u++)
 	{
 		Client *c = findClientByNick(**u);
 		if (c && c != &(*(clients->end())))
 		{
 			markie(c, params, KICK);
+			if (c->getNick() == params[2])
+				us = i;
 		}
+		i++;
 	}
+	i = 0;
 	for (std::vector<std::string*>::iterator u = ch->getAdmins().begin(); u != ch->getAdmins().end(); u++)
 	{
 		Client *c = findClientByNick(**u);
 		if (c && c != &(*(clients->end())))
+		{
 			markie(c, params, KICK);
+			if (c->getNick() == params[2])
+				ad = i;
+		}
+		i++;
 	}
-	for (std::vector<std::string *>::iterator rm = ch->getUsers().begin(); rm != ch->getUsers().end(); rm++)
-	{
-		if (**rm == params[2])
-			ch->getUsers().erase(rm);
-	}
-	for (std::vector<std::string *>::iterator rm = ch->getAdmins().begin(); rm != ch->getAdmins().end(); rm++)
-	{
-		if (**rm == params[2])
-			ch->getAdmins().erase(rm);
-	}
-	//ch->printAdminUsers();
+	if (us > -1)
+		ch->getUsers().erase(ch->getUsers().begin() + us);
+	if (ad > -1)
+		ch->getAdmins().erase(ch->getAdmins().begin() + ad);
+	std::cout << "KICK REMOVING AND MARKING" << std::endl;
+
 }
 		
 void	Command::part(std::vector<std::string> params)
@@ -856,12 +896,43 @@ void	Command::part(std::vector<std::string> params)
 	launcher->setPollOut(1);
 }
 
-void	Command::kick(const std::vector<std::string>& params)
+void	Command::invite(std::vector<std::string> params)
 {
-	if (params.size() < 3)
+	if (params.size() != 3)
 	{
 		return msgError(ERR_NEEDMOREPARAMS, params);
 	}
+	Channel *ch = this->getChannelByName(params[2]);
+	if (!ch)
+	{
+		return msgError(ERR_NOSUCHCHANNEL, params);
+	}
+	if (!ch->isAdmin(launcher->getNick()))
+	{
+		if (ch->isUser(launcher->getNick()))
+			return msgError(ERR_CHANOPRIVSNEEDED, params);
+		else
+			return msgError(ERR_USERNOTINCHANNEL, params);
+	}
+	if  (ch->isUser(params[1]) || ch->isAdmin(params[1]))
+		return msgError(ERR_USERONCHANNEL, params);
+	std::vector<std::string> target;
+
+	target.push_back(params[1]);
+	Client *cl = findClientByNick(params[1]);
+	ch->setGuest(&cl->getNick());
+	markClientsPollOut(clients, target, params, INVITE);
+}
+
+void	Command::kick(const std::vector<std::string>& params)
+{
+	size_t	i;
+	size_t	pos;
+
+	i = 0;
+	std::cout << "WEEEEEEEEBA" << std::endl;
+	if (params.size() < 3)
+		return msgError(ERR_NEEDMOREPARAMS, params);
 	Channel *ch = this->getChannelByName(params[1]);
 	if (!ch)
 	{
@@ -877,6 +948,42 @@ void	Command::kick(const std::vector<std::string>& params)
 	{
 		return msgError(ERR_USERNOTINCHANNEL, params);
 	}
+
+	std::vector<std::string> chans = split(params[1], ',');
+	std::vector<std::string> users = split(params[2], ',');
+	std::vector<std::string> parameters;
+
+	parameters.push_back("KICK");
+	chans.size() >= users.size() ? i = chans.size() : i = users.size();
+	pos = 0;
+	while (pos < i)
+	{
+		if (pos >= chans.size() || pos >= users.size())
+		{
+			markEverything(ERR_NEEDMOREPARAMS, params);
+			launcher->setPollOut(1);
+			return ;
+		}
+		parameters.push_back(chans.at(pos));
+		parameters.push_back(users.at(pos));
+		if (params.size() >= 3)
+		{
+			for (size_t i = 0; i < params.size(); i++)
+				parameters.push_back(params.at(i));
+		}
+		kickProcessOne(parameters);
+		parameters.clear();
+		parameters.push_back("KICK");
+		pos++;
+	}
+}
+
+
+		
+
+void	Command::kickProcessOne(const std::vector<std::string>& params)
+{
+	Channel *ch = this->getChannelByName(params[1]);
 	markChannel(ch, params);
 }
 
@@ -1304,9 +1411,11 @@ int Command::stringToEnum(const str& str) {
         stringToEnumMap["JOIN_OK"] = JOIN_OK;
         stringToEnumMap["MODE_OK"] = MODE_OK;
         stringToEnumMap["KICK"] = KICK;
+        stringToEnumMap["INVITE"] = INVITE;
         stringToEnumMap["MODE"] = MODE;
         stringToEnumMap["MODE_WITH_CHANNEL"] = MODE_WITH_CHANNEL;
         stringToEnumMap["ERR_NOTONCHANNEL"] = ERR_NOTONCHANNEL;
+        stringToEnumMap["ERR_USERONCHANNEL"] = ERR_USERONCHANNEL;
         stringToEnumMap["ERR_BADCHANMASK"] = ERR_BADCHANMASK;
         stringToEnumMap["ERR_NEEDMOREPARAMS"] = ERR_NEEDMOREPARAMS;
         stringToEnumMap["ERR_ALREADYREGISTRED"] = ERR_ALREADYREGISTRED;
