@@ -108,7 +108,7 @@ class Client
 		void	setUser(std::string u) { this->username = u;};
 		void	setAuxMsg(std::string u) { this->auxMsg = u;};
 		void	setRegister(int i) { this->registered = i;};
-		void	setLogFail(int i) { std::cout << "averaveraver" << std::endl;this->logFail = i;};
+		void	setLogFail(int i) { this->logFail = i;};
 		void	setNCmd(int i) { this->cmds.push_back(i);};
 		void	setCommand(int i) { this->command = i;};
 		void	setPsswd(std::string p);

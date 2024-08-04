@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 		std::cerr << "1. port\n2. password" << std::endl;
 		return 1;
 	}
-	std::string hostname("tuckerson.tuki.com");
+	std::string hostname("www.ircserv.com");
 	Server	irc(argv[1], argv[2], hostname);
 	if (irc.getPortError())
 	{
@@ -28,6 +28,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	std::cout << "Starting server..." << std::endl;
 	if (irc.launchServer() != 0)
 		return 1;
 	std::cout << "Success finish" << std::endl;

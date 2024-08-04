@@ -1,21 +1,6 @@
 #include <Ircsrv.hpp>
 #include <Client.hpp>
 
-/*
-void	Client::handleCmd()
-{
-	for (std::map<int, std::vector<std::string> >::iterator i = cmd.begin(); i != cmd.end(); i++)
-	{
-		std::vector<std::string> params;
-		for (std::vector<std::string>::iterator y = i->second.begin(); y != i->second.end(); y++)
-		{
-			params.push_back(*y);
-		}
-		launchAction(params);
-		params.empty();
-	}
-}
-*/
 int	Client::getParseStatus()
 {
 	return this->parseStatus;
@@ -31,7 +16,6 @@ Client::Client(int socket, int i, std::string sp, std::string hn) : fd(socket), 
 	channels = vectorStr(0);
 	logFail = 23;
 	pollout = 0;
-	//pollout = 1;
 }
 
 void	Client::setMsg(std::string message)
@@ -39,24 +23,14 @@ void	Client::setMsg(std::string message)
 	this->msg += message;
 	if (message == "")
 	{
-		std::cout << "QEPASAVERGAVALE";
 		this->msg = "";
 	}
 	if (this->msg.size() >= 510)
 	{
-		std::cout << "amos a ver pasa por aca o no?????????????";
 		this->msg.push_back('\r');
 		this->msg.push_back('\n');
-		std::cout << this->msg.size() << std::endl;
 	}
 }
-
-/*
-void	Client::setParams(std::map<int, std::vector<std::string> > p)
-{
-	this->params = p;
-}
-*/
 
 void	Client::printShait()
 {
@@ -81,7 +55,6 @@ Client::Client()
 
 Client::~Client()
 {
-	//std::cout << "Cliente deleteado" << std::endl;
 }
 
 std::vector<std::string> Client::split(std::string na, const char *c)
@@ -169,15 +142,9 @@ int Client::parseMsg()
 	{
 	
 		parameters = split(tokens[i], " ");
-		/*if (parameters[0] == "NICK")
-		{
-			//std::cout << "EEO" << std::endl;
-			std::cout << msg << std::endl;
-		}*/
 		cmd[i] = parameters;
 		parameters.clear();
 	}
-	//printCmd();
 	return (0);
 }
 void	Client::printeito()

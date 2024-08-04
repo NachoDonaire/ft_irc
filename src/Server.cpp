@@ -37,7 +37,6 @@ Server::Server(char *p, char *pd, std::string hn) : port(p)
 		}
 	}
 	currentSize = 1;
-	std::cout << "CURRENT SIZE AT CONSTRUCTOR" << currentSize <<std::endl;
 }	
 
 bool	Server::launchServer()
@@ -120,7 +119,6 @@ void	Server::reallocPlus()
 
 void	Server::establishConnection()
 {
-	std::cout << "Someones connecting" << std::endl;
 	reallocPlus();
 }
 
@@ -151,7 +149,7 @@ void handle_sigint(int sig)
 
 	if (sig == SIGINT)
 	{
-		printf("Closing server...");
+		std::cout << "Closing server..." << std::endl;
 		SERVER_ON = 0;
 	}
 }
@@ -162,7 +160,6 @@ void	Server::checkClientEvents()
 	std::vector<int>	out;
 	int			pos;
 
-	//POSIBLE SEGFAULT
 	if (clientSock.size() <= 1)
 		return ;
 	pos = 0;
@@ -187,12 +184,7 @@ void	Server::checkClientEvents()
 					out.push_back(pos);
 			}
 			this->recData[nread] = '\0';
-			for (int i = 0; i < nread; i++)
-				write(1, &recData[i], 1);
 			treatRecData(nread);
-			std::cout << "MSG ---> " << nread <<std::endl;
-			for (int i = 0; i < nread; i++)
-				write(1, &recData[i], 1);
 			sit->setMsg(this->recData);
 		}
 		if (it->revents & POLLOUT)
@@ -203,16 +195,8 @@ void	Server::checkClientEvents()
 
 			for(std::vector<std::string>::iterator r = responses.begin(); r != responses.end(); r++)
 			{
-				std::cout << "RESPONSE" << std::endl;
-				std::cout << *r << std::endl;
 				send(sit->getSocket(), r->c_str(), r->size(), 0);
-				/*if (*ncmdit == BAD_PSSWD) //|| *ncmdit == QUIT)
-				{
-					std::cout << "OOOJ" << std::endl;
-					out.push_back(pos);
-				}*/
 				ncmdit++;
-				//pos++;
 			}
 			sit->emptyResponse();
 			sit->emptyNCmd();
@@ -226,12 +210,7 @@ void	Server::checkClientEvents()
 	for (std::vector<int>::iterator it = out.begin(); it != out.end(); it++)
 	{
 		close(clientSock.at(*it + 1).fd);
-
 		clientSock.erase(pfd + ((*it) + 1));
-		std::vector<Client>::iterator cla = clients.begin() + *(it);
-
-		std::cout << "Removing client with nick: " <<  cla->getNick() << std::endl;
-		
 		clients.erase(cl + (*it));
 	}
 }
@@ -295,7 +274,6 @@ bool	Server::handleConnections()
 	while (SERVER_ON)
 	{
 		pollout(1);
-		// SI POLL FALLA; CHAPAMOS??
 		if (poll(clientSock.data(), clientSock.size(), -1) < 0)
 		{
 			perror("poll");
@@ -305,10 +283,8 @@ bool	Server::handleConnections()
 			establishConnection();
 		checkClientEvents();
 		handleMessages();
-		std::cout << "clientSock SIZE: " << clientSock.size() << std::endl;
 		pollout(0);
 	}
-	std::cout << "Closing all sockets..." << std::endl;
 	for (size_t i = 0; i < clientSock.size(); i++)
 	{
 		if (close(clientSock.at(i).fd) != 0)

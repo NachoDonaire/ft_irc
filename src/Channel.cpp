@@ -3,26 +3,22 @@
 
 Channel::Channel(): users(0), admins(0), topic(""), id(""), password(""), maxUsers(-1), inviteMode(false), topicRestriction(false)
 {
-//Const
 }
 
 Channel::Channel(const Channel& src)
 {
-//Copy Const
 	*this = src;
 }
 
 Channel::Channel(const std::string id): users(0), admins(0), topic(""), password(""), inviteMode(false), topicRestriction(false)
 {
 	this->setId(id);
-	//maxUsers = (unsigned int)MAX_USERS_PER_CHANNEL;
 	maxUsers = -1;
 
 }
 
 Channel::~Channel()
 {
-//Dest
 }
 
 Channel& Channel::operator = (const Channel& src)
@@ -122,9 +118,7 @@ void	Channel::setTopicRestriction(const bool& src)
 
 void	Channel::joinClient(std::string &userId, const std::string password, const bool& isAdmin)
 {
-	std::cout << "PASSWORD: " << this->password << std::endl;
 	if (password != this->password)
-		//throw std::logic_error("The password provided is not valid for the channel");
 		throw std::logic_error("ERR_BADCHANNELKEY");
 	if (!isAdmin)
 		joinClient(users, userId, isAdmin);
@@ -135,8 +129,6 @@ void	Channel::joinClient(std::string &userId, const std::string password, const 
 void	Channel::printAdminUsers() const
 {
 
-	std::cout << "CHANNEL : " << id << std::endl;
-	std::cout << "users : ";
 	std::vector<std::string *>::const_iterator user = users.begin();
 	while (user != users.end())
 	{
@@ -196,18 +188,7 @@ void 	Channel::joinClient(vectorStr& users, std::string &userId, const bool& isA
 		throw std::logic_error("ERR_NEEDMOREPARAMS");
 	if (users.size() + admins.size() >= maxUsers && maxUsers >= 0)
 		throw std::logic_error("ERR_CHANNELISFULL");
-/*
-mejor poner esta comprobación en la clase command, cuando es un channel existente si ya esta no hacer nada y responder con OK
-
-	//El client no manda mensaje si el usuario ya está en el canal
-	//revisar si se pasan varios canales y el usuario ya está en uno que hace el cliente 
-	if (user != users.end() || findUser(admins, userId) != admins.end())
-		throw std::logic_error("The user is already in the Channel");
-*/
-
 	isAdmin ? admins.push_back(&userId) : users.push_back(&userId);
-	std::cout << "JOIN CLIENT" << std::endl;
-	printAdminUsers();
 }
 
 void	Channel::deleteClient(vectorStr& users, const std::string* userId)
@@ -217,7 +198,6 @@ void	Channel::deleteClient(vectorStr& users, const std::string* userId)
 		user = findUser(admins, userId);
 	if (user == admins.end())
 		throw std::logic_error("The userId wasn't find in the Channel");
-	//que  sucede si no esta en users si no en admins??
 	users.erase(user);
 }
 
@@ -236,13 +216,10 @@ void	Channel::deleteClient(const std::string* userId)
 vectorStr::iterator	Channel::findUser(vectorStr& users, const std::string* userId)
 {
 	vectorStr::iterator user = users.begin();
-	std::cout << "FINDUSER" << std::endl;
 	while (user != users.end() && **user != *userId)
 	{
-		std::cout << **user << std::endl;
 		user++;
 	}
-	this->printAdminUsers();
 	return user;
 }
 

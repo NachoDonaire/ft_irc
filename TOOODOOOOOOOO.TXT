@@ -1,4 +1,0 @@
-1. mandar al cliente todos los modos sin espacios (ok)
-2. corregir orden de argumentos in progress
-3. acabar +o -o
-4. pruebas exhaustivas 
