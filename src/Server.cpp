@@ -44,7 +44,9 @@ bool	Server::launchServer()
 {
 	struct addrinfo *result, hints;
 	struct pollfd listener;
+	int	opt;
 
+	opt = 1;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;       // IPv4
 	hints.ai_socktype = SOCK_STREAM; // TCP
@@ -61,16 +63,23 @@ bool	Server::launchServer()
 		serverSock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if (serverSock == -1)
 			continue;
+		if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
+		{
+			perror("setsockopt");
+			close(serverSock);
+			return 1;
+    		}
 		if (bind(serverSock, rp->ai_addr, rp->ai_addrlen) == 0)
 			break;
 		freeaddrinfo(result);
 		close(serverSock);
 		perror("bind");
-		return 0;
+		return 1;
 	}
 
 	freeaddrinfo(result);
 
+	
 	if (serverSock == -1)
 	{
 		std::cerr << "Cannot bind" << std::endl;
@@ -284,7 +293,10 @@ bool	Server::handleConnections()
 		pollout(1);
 		// SI POLL FALLA; CHAPAMOS??
 		if (poll(clientSock.data(), clientSock.size(), -1) < 0)
-			std::cerr << "poll() error" << std::endl;
+		{
+			perror("poll");
+			break ;
+		}
 		if (clientSock.at(0).revents & POLLIN)
 			establishConnection();
 		checkClientEvents();
